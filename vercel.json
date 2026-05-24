@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "name": "guestpulse-frontend",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block"
+      }
+    }
+  ],
+  "env": {
+    "VITE_API_BASE_URL": "https://pulse.anvayabali.com/api",
+    "VITE_APP_NAME": "GuestPulse",
+    "VITE_APP_ENV": "production",
+    "VITE_ENABLE_MOCK_DATA": "false"
+  },
+  "build": {
+    "env": {
+      "VITE_API_BASE_URL": "https://pulse.anvayabali.com/api",
+      "VITE_APP_NAME": "GuestPulse",
+      "VITE_APP_ENV": "production",
+      "VITE_ENABLE_MOCK_DATA": "false"
+    }
+  }
+}
