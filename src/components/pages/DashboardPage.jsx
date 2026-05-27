@@ -162,10 +162,38 @@ function DeptBar({ d, max }) {
 }
 
 function CriticalList({ stats }) {
-  const issues = window.PULSE_MOCK.ISSUES
-    .filter(i => i.status === "open" && (i.priority === "urgent" || i.priority === "high"))
-    .sort((a, b) => (a.priority === "urgent" ? -1 : 1))
-    .slice(0, 4);
+  const [issues, setIssues] = useState([]);
+
+  useEffect(() => {
+    const fetchCriticalIssues = async () => {
+      try {
+        const response = await window.PulseAPI.Issues.list({
+          status: 'open',
+          priority: 'urgent',
+          per_page: 4
+        });
+
+        // If we need both urgent and high, we might need to make two calls
+        // or the API should support filtering by multiple priorities
+        const highPriorityResponse = await window.PulseAPI.Issues.list({
+          status: 'open',
+          priority: 'high',
+          per_page: 4
+        });
+
+        const combinedIssues = [...response.data, ...highPriorityResponse.data]
+          .sort((a, b) => (a.priority === 'urgent' ? -1 : 1))
+          .slice(0, 4);
+
+        setIssues(combinedIssues);
+      } catch (error) {
+        console.error('Failed to fetch critical issues:', error);
+        setIssues([]);
+      }
+    };
+
+    fetchCriticalIssues();
+  }, []);
   if (issues.length === 0) return <EmptyD icon="check-circle" title="Nothing urgent" description="All high-priority issues are handled." />;
   return (
     <div>
@@ -181,7 +209,15 @@ function CriticalList({ stats }) {
             <AvatarD name={i.name} size={32}/>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{i.title}</div>
-              <div style={{ fontSize: 12, color: TD.mutedLight, marginTop: 1 }}>{i.location} · #{i.id}</div>
+              <div style={{ fontSize: 12, color: TD.mutedLight, marginTop: 1 }}>
+                {i.location} · #{i.id}
+                {i.issueTypes && i.issueTypes.length > 0 && (
+                  <span style={{ marginLeft: 6 }}>
+                    · <span style={{ color: TD.purple }}>{i.issueTypes[0].name}</span>
+                    {i.issueTypes.length > 1 && <span style={{ color: TD.muted }}> +{i.issueTypes.length - 1}</span>}
+                  </span>
+                )}
+              </div>
             </div>
             <PriPillD value={i.priority}/>
           </div>
@@ -192,10 +228,35 @@ function CriticalList({ stats }) {
 }
 
 function ActivityList() {
-  const log = window.PULSE_MOCK.ACTIVITY_LOG.slice(0, 5);
+  const [log, setLog] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [available, setAvailable] = useState(true);
   const meta = {
     issue: { icon: "edit", color: TD.muted },
   };
+
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const response = await window.PulseAPI.Activity.list({ per_page: 5 });
+        setLog(response.data || []);
+      } catch (error) {
+        // Endpoint not available - hide this section
+        if (error.status === 404) {
+          setAvailable(false);
+        } else {
+          setLog([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivity();
+  }, []);
+
+  if (!available) return <EmptyD icon="clock" title="Activity log coming soon" description="This feature will be available in the next update." />;
+  if (loading) return <div style={{ padding: 20, textAlign: "center", color: TD.muted }}>Loading activity...</div>;
   return (
     <div>
       {log.map(a => (

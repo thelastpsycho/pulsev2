@@ -33,10 +33,9 @@ const DropdownDividerL = getPulseOverlay().DropdownDivider;
 // Adding a new role with different permissions will work automatically.
 function can(user, permission) {
   if (!user?.permissions) {
-    console.log('can: No permissions on user', user);
     return false;
   }
-  const result = user.permissions.some(p => {
+  return user.permissions.some(p => {
     if (p === permission) return true;
     // Check wildcard: "admin.users.*" should match "admin.users.view"
     if (p.endsWith('*')) {
@@ -45,8 +44,6 @@ function can(user, permission) {
     }
     return false;
   });
-  console.log(`can(${permission}):`, result, 'User permissions:', user.permissions);
-  return result;
 }
 
 // ---- Hash router -----------------------------------------------------------
@@ -106,8 +103,7 @@ function Sidebar({ user, counts, collapsed }) {
     ]},
     { section: "reports", title: "Reports", items: [
       { to: "/reports", label: "Reports", icon: "report" },
-      { to: "/reports/monthly", label: "Monthly", icon: "calendar" },
-      { to: "/reports/yearly", label: "Yearly", icon: "calendar" },
+      { to: "/reports/custom", label: "Custom", icon: "filter" },
       { to: "/reports/logbook", label: "Logbook", icon: "book" },
       { to: "/statistics", label: "Statistics", icon: "chart-pie" },
       { to: "/graphs", label: "Graphs", icon: "chart-line" },
@@ -311,10 +307,21 @@ function Tabs({ value, onChange, items, style }) {
 // ---- AppLayout -------------------------------------------------------------
 function AppLayout({ user, children, onSignOut, breadcrumb, title, actions }) {
   const [collapsed, setCollapsed] = useState(false);
-  // counts for sidebar — read live from mock issues
-  const counts = useMemo(() => {
-    const issues = window.PULSE_MOCK.ISSUES;
-    return { openIssues: issues.filter(i => i.status === "open").length };
+  const [counts, setCounts] = useState({ openIssues: 0 });
+
+  // Fetch issue counts from API
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const response = await window.PulseAPI.Stats.dashboard();
+        setCounts({ openIssues: response.summary.open_issues || 0 });
+      } catch (error) {
+        console.error('Failed to fetch issue counts:', error);
+        setCounts({ openIssues: 0 });
+      }
+    };
+
+    fetchCounts();
   }, []);
 
   return (

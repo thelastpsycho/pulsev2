@@ -1,13 +1,13 @@
 import React from 'react'
-import ReactDOM from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import './index.css'
 // Library files
-import './lib/mock.js'
 import './lib/api.js'
 // UI Components
 import './components/ui/UIPrimitives.jsx'
 import './components/ui/UIForm.jsx'
 import './components/ui/UIOverlay.jsx'
+import './components/ui/DateRangePicker.jsx'
 // Layout
 import './components/layout/Layout.jsx'
 // Pages
@@ -20,4 +20,4 @@ import './components/pages/AdminPages.jsx'
 // App
 import { App } from './app.jsx'
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(<App />)

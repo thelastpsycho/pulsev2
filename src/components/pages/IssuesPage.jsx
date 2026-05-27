@@ -41,14 +41,13 @@ function IssuesListPage() {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    status: "open", priority: "", department_id: "", search: "",
+    status: "open", issue_type_id: "", department_id: "", search: "",
     page: 1, per_page: 25, sort_by: "created_at", sort_order: "desc",
   });
   const [view, setView] = useState("table"); // table | kanban
   const [selected, setSelected] = useState(new Set());
-
-  const departments = window.PULSE_MOCK.DEPARTMENTS;
-  const issueTypes = window.PULSE_MOCK.ISSUE_TYPES;
+  const [departments, setDepartments] = useState([]);
+  const [issueTypes, setIssueTypes] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +55,7 @@ function IssuesListPage() {
     window.PulseAPI.Issues.list({
       ...filters,
       department_id: filters.department_id ? Number(filters.department_id) : undefined,
-      priority: filters.priority || undefined,
+      issue_type_id: filters.issue_type_id ? Number(filters.issue_type_id) : undefined,
       status: filters.status || undefined,
       search: filters.search || undefined,
     }).then(r => {
@@ -65,6 +64,26 @@ function IssuesListPage() {
     });
     return () => { cancelled = true; };
   }, [JSON.stringify(filters)]);
+
+  // Fetch departments and issue types
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [deptResponse, typesResponse] = await Promise.all([
+          window.PulseAPI.Departments.list(),
+          window.PulseAPI.IssueTypes.list()
+        ]);
+        setDepartments(deptResponse.data || []);
+        setIssueTypes(typesResponse.data || []);
+      } catch (error) {
+        console.error('Failed to fetch departments/issue types:', error);
+        setDepartments([]);
+        setIssueTypes([]);
+      }
+    };
+
+    fetchOptions();
+  }, []);
 
   const setF = (k, v) => setFilters(f => ({ ...f, [k]: v, page: 1 }));
 
@@ -110,16 +129,16 @@ function IssuesListPage() {
         <div style={{ flex: "1 1 280px", maxWidth: 360 }}>
           <InI value={filters.search} onChange={v => setF("search", v)} icon="search" placeholder="Search by title, guest, room, ID…"/>
         </div>
-        <SeI value={filters.priority} onChange={v => setF("priority", v)} placeholder="Any priority" options={[
-          { value: "", label: "Any priority" },
-          { value: "urgent", label: "Urgent" }, { value: "high", label: "High" }, { value: "medium", label: "Medium" }, { value: "low", label: "Low" },
-        ]} style={{ width: 150 }}/>
+        <SeI value={filters.issue_type_id} onChange={v => setF("issue_type_id", v)} placeholder="Any issue type" options={[
+          { value: "", label: "Any issue type" },
+          ...issueTypes.filter(t => t.is_active).map(t => ({ value: t.id, label: t.name })),
+        ]} style={{ width: 180 }}/>
         <SeI value={filters.department_id} onChange={v => setF("department_id", v)} placeholder="Any department" options={[
           { value: "", label: "Any department" },
           ...departments.filter(d => d.is_active).map(d => ({ value: d.id, label: d.name })),
         ]} style={{ width: 200 }}/>
-        {(filters.priority || filters.department_id || filters.search) && (
-          <BI variant="ghost" size="sm" icon="x" onClick={() => setFilters({ ...filters, search: "", priority: "", department_id: "", page: 1 })}>Clear</BI>
+        {(filters.issue_type_id || filters.department_id || filters.search) && (
+          <BI variant="ghost" size="sm" icon="x" onClick={() => setFilters({ ...filters, search: "", issue_type_id: "", department_id: "", page: 1 })}>Clear</BI>
         )}
         <div style={{ flex: 1 }}/>
         <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12.5, color: TI.muted }}>
@@ -127,7 +146,6 @@ function IssuesListPage() {
           <SeI value={filters.sort_by} onChange={v => setF("sort_by", v)} options={[
             { value: "created_at", label: "Newest" },
             { value: "updated_at", label: "Recently updated" },
-            { value: "priority", label: "Priority" },
             { value: "title", label: "Title" },
           ]} style={{ width: 170 }} placeholder=""/>
         </div>
@@ -154,7 +172,7 @@ function IssuesListPage() {
       {view === "table" ? (
         <IssuesTable issues={issues} loading={loading} selected={selected} toggleAll={toggleAll} toggleOne={toggleOne}/>
       ) : (
-        <IssuesKanban issues={issues} loading={loading}/>
+        <IssuesKanban issues={issues} loading={loading} issueTypes={issueTypes}/>
       )}
 
       {meta && meta.last_page > 1 && (
@@ -190,7 +208,7 @@ function IssuesTable({ issues, loading, selected, toggleAll, toggleOne }) {
             <Th>Title</Th>
             <Th width="170">Guest · Room</Th>
             <Th width="120">Department</Th>
-            <Th width="90">Priority</Th>
+            <Th width="120">Issue Types</Th>
             <Th width="80">Status</Th>
             <Th width="120">Assigned</Th>
             <Th width="100">Updated</Th>
@@ -226,7 +244,18 @@ function IssueRow({ issue, selected, onToggle }) {
       <td style={{ padding: "10px 8px", color: TI.muted, fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 500 }}>#{issue.id}</td>
       <td style={{ padding: "10px 8px" }}>
         <div style={{ fontWeight: 500, color: TI.text, letterSpacing: "-0.005em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 380 }}>{issue.title}</div>
-        <div style={{ fontSize: 12, color: TI.mutedLight, marginTop: 1 }}>{issue.issueTypes?.[0]?.name || "—"}</div>
+        <div style={{ fontSize: 12, color: TI.mutedLight, marginTop: 1 }}>
+          {issue.issueTypes && issue.issueTypes.length > 0
+            ? issue.issueTypes.slice(0, 2).map((t, i) => (
+                <span key={t.id}>
+                  {i > 0 && ", "}{t.name}
+                </span>
+              ))
+            : "—"}
+          {issue.issueTypes && issue.issueTypes.length > 2 && (
+            <span style={{ color: TI.accent, fontWeight: 500 }}> +{issue.issueTypes.length - 2} more</span>
+          )}
+        </div>
       </td>
       <td style={{ padding: "10px 8px", fontSize: 12.5 }}>
         <div style={{ color: TI.text }}>{issue.name || "—"}</div>
@@ -235,7 +264,16 @@ function IssueRow({ issue, selected, onToggle }) {
       <td style={{ padding: "10px 8px" }}>
         {issue.departments?.map(d => <PI key={d.id} color={TI.muted} style={{ marginRight: 4 }}>{d.code || d.name}</PI>)}
       </td>
-      <td style={{ padding: "10px 8px" }}><PrI value={issue.priority}/></td>
+      <td style={{ padding: "10px 8px" }}>
+        {issue.issueTypes && issue.issueTypes.length > 0
+          ? issue.issueTypes.slice(0, 2).map((t, i) => (
+              <PI key={t.id} color={TI.purple} style={{ marginRight: 4 }}>{t.name}</PI>
+            ))
+          : <span style={{ fontSize: 12, color: TI.mutedLight, fontStyle: "italic" }}>—</span>}
+        {issue.issueTypes && issue.issueTypes.length > 2 && (
+          <span style={{ fontSize: 11.5, color: TI.accent, fontWeight: 500 }}>+{issue.issueTypes.length - 2}</span>
+        )}
+      </td>
       <td style={{ padding: "10px 8px" }}><StI value={issue.status}/></td>
       <td style={{ padding: "10px 8px" }}>
         {issue.assignedTo ? (
@@ -262,18 +300,26 @@ function IssueRow({ issue, selected, onToggle }) {
   );
 }
 
-function IssuesKanban({ issues, loading }) {
-  const columns = [
-    { id: "urgent", label: "Urgent", color: TI.urgent },
-    { id: "high", label: "High", color: TI.high },
-    { id: "medium", label: "Medium", color: TI.medium },
-    { id: "low", label: "Low", color: TI.low },
-  ];
+function IssuesKanban({ issues, loading, issueTypes }) {
   if (loading) return <div style={{ padding: 28 }}><SI height={120}/></div>;
+
+  // Group by issue types, default to "Uncategorized" for issues without types
+  const columns = issueTypes.length > 0
+    ? [
+        ...issueTypes.filter(t => t.is_active).map(t => ({ id: t.id, label: t.name, color: TI.purple })),
+        { id: "none", label: "Uncategorized", color: TI.muted }
+      ]
+    : [{ id: "all", label: "All Issues", color: TI.purple }];
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, padding: "16px 28px 24px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(columns.length, 4)}, 1fr)`, gap: 12, padding: "16px 28px 24px" }}>
       {columns.map(col => {
-        const items = issues.filter(i => i.priority === col.id);
+        const items = col.id === "none"
+          ? issues.filter(i => !i.issueTypes || i.issueTypes.length === 0)
+          : col.id === "all"
+            ? issues
+            : issues.filter(i => i.issueTypes && i.issueTypes.some(t => t.id === col.id));
+
         return (
           <div key={col.id} style={{ background: "#fafafa", borderRadius: 12, padding: 8, border: "1px solid rgba(0,0,0,0.05)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px 10px", fontSize: 12.5, fontWeight: 600, color: TI.text }}>
@@ -294,6 +340,22 @@ function IssuesKanban({ issues, loading }) {
                     <div style={{ fontSize: 11.5, color: TI.mutedLight, fontVariantNumeric: "tabular-nums", marginBottom: 3 }}>#{i.id}</div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: TI.text, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.005em" }}>{i.title}</div>
                     <div style={{ fontSize: 11.5, color: TI.mutedLight, marginTop: 4 }}>{i.room_number || i.location}</div>
+                    {i.departments && i.departments.length > 0 && (
+                      <div style={{ fontSize: 11, color: TI.muted, marginTop: 3, display: "flex", flexWrap: "wrap", gap: 3 }}>
+                        {i.departments.slice(0, 2).map(d => (
+                          <span key={d.id} style={{
+                            background: "rgba(0,0,0,0.05)", borderRadius: 4, padding: "2px 6px",
+                            fontSize: 10, fontWeight: 500, color: TI.mutedLight
+                          }}>{d.code || d.name}</span>
+                        ))}
+                        {i.departments.length > 2 && (
+                          <span style={{
+                            background: "rgba(0,122,255,0.08)", borderRadius: 4, padding: "2px 6px",
+                            fontSize: 10, fontWeight: 500, color: TI.accent
+                          }}>+{i.departments.length - 2}</span>
+                        )}
+                      </div>
+                    )}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
                       <StI value={i.status}/>
                       {i.assignedTo ? <AvI name={i.assignedTo.name} size={20}/> : <span style={{ fontSize: 10.5, color: TI.mutedLight }}>Unassigned</span>}
@@ -351,6 +413,35 @@ function IssueDetailPage({ id, user }) {
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
 
+  // Debug: Log issue status when it changes
+  useEffect(() => {
+    if (issue) {
+      console.log('Issue status:', issue.status);
+      console.log('Issue data:', issue);
+      console.log('Status type:', typeof issue.status);
+      console.log('Status === "open":', issue.status === "open");
+      console.log('Status === "closed":', issue.status === "closed");
+
+      // Add global test function
+      window.testReopen = async () => {
+        console.log('Manual test: Attempting to reopen issue', id);
+        console.log('Current status:', issue.status);
+        try {
+          const result = await window.PulseAPI.Issues.reopen(id);
+          console.log('Reopen result:', result);
+          window.toast.success('Manual reopen successful!');
+        } catch (error) {
+          console.error('Manual reopen failed:', error);
+          window.toast.error('Manual reopen failed: ' + JSON.stringify(error));
+        }
+      };
+
+      return () => {
+        delete window.testReopen;
+      };
+    }
+  }, [issue, id]);
+
   if (loading || !issue) {
     return (
       <div style={{ padding: 32 }}>
@@ -362,14 +453,29 @@ function IssueDetailPage({ id, user }) {
   }
 
   const close = async () => {
-    await window.PulseAPI.Issues.close(id);
-    window.toast.success(`Issue #${id} closed`);
-    reload();
+    try {
+      await window.PulseAPI.Issues.close(id);
+      window.toast.success(`Issue #${id} closed`);
+      reload();
+    } catch (error) {
+      console.error('Failed to close issue:', error);
+      window.toast.error('Failed to close issue: ' + (error.message || 'Unknown error'));
+    }
   };
   const reopen = async () => {
-    await window.PulseAPI.Issues.reopen(id);
-    window.toast.success(`Issue #${id} reopened`);
-    reload();
+    console.log('Attempting to reopen issue:', id);
+    try {
+      console.log('Calling reopen API...');
+      const response = await window.PulseAPI.Issues.reopen(id);
+      console.log('Reopen response:', response);
+      window.toast.success(`Issue #${id} reopened`);
+      reload();
+    } catch (error) {
+      console.error('Failed to reopen issue:', error);
+      console.error('Error status:', error.status);
+      console.error('Error message:', error.message);
+      window.toast.error('Failed to reopen issue: ' + (error.message || 'Unknown error'));
+    }
   };
   const postComment = async () => {
     if (!comment.trim()) return;
@@ -576,8 +682,23 @@ function Comment({ c }) {
 }
 
 function AssignModal({ onClose, onAssign, current }) {
-  const users = window.PULSE_MOCK.USERS.filter(u => u.is_active);
+  const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await window.PulseAPI.Users.list();
+        setUsers(response.data.filter(u => u.is_active));
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        setUsers([]);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
   const filtered = users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <MdI title="Assign issue" onClose={onClose} width={400} padding={false}>
@@ -646,6 +767,9 @@ function IssueFormPage({ id }) {
     assigned_to_user_id: null,
   });
   const [errors, setErrors] = useState({});
+  const [departments, setDepartments] = useState([]);
+  const [issueTypes, setIssueTypes] = useState([]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     if (isEdit) {
@@ -663,9 +787,32 @@ function IssueFormPage({ id }) {
           assigned_to_user_id: i.assigned_to_user_id,
         });
         setLoading(false);
+      }).catch(err => {
+        console.error('Failed to load issue:', err);
+        window.toast.error('Failed to load issue');
+        setLoading(false);
       });
     }
   }, [id]);
+
+  useEffect(() => {
+    // Load real data from API instead of mock data
+    Promise.all([
+      window.PulseAPI.Departments.list(),
+      window.PulseAPI.IssueTypes.list(),
+      window.PulseAPI.Users.list()
+    ]).then(([deptRes, typesRes, usersRes]) => {
+      setDepartments(deptRes.data.filter(d => d.is_active));
+      setIssueTypes(typesRes.data.filter(t => t.is_active));
+      setUsers(usersRes.data.filter(u => u.is_active));
+    }).catch(err => {
+      console.error('Failed to load form options:', err);
+      window.toast.error('Failed to load form options');
+      setDepartments([]);
+      setIssueTypes([]);
+      setUsers([]);
+    });
+  }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -689,28 +836,6 @@ function IssueFormPage({ id }) {
   };
 
   if (loading) return <div style={{ padding: 32 }}><SI height={300}/></div>;
-
-  const [departments, setDepartments] = useState([]);
-  const [issueTypes, setIssueTypes] = useState([]);
-  const [users, setUsers] = useState([]);
-
-  useEffect(() => {
-    // Load real data from API instead of mock data
-    Promise.all([
-      window.PulseAPI.Departments.list(),
-      window.PulseAPI.IssueTypes.list(),
-      window.PulseAPI.Users.list()
-    ]).then(([deptRes, typesRes, usersRes]) => {
-      setDepartments(deptRes.data.filter(d => d.is_active));
-      setIssueTypes(typesRes.data.filter(t => t.is_active));
-      setUsers(usersRes.data.filter(u => u.is_active));
-    }).catch(err => {
-      // Fallback to mock data if API fails
-      setDepartments(window.PULSE_MOCK.DEPARTMENTS.filter(d => d.is_active));
-      setIssueTypes(window.PULSE_MOCK.ISSUE_TYPES.filter(t => t.is_active));
-      setUsers(window.PULSE_MOCK.USERS.filter(u => u.is_active));
-    });
-  }, []);
 
   return (
     <div>
@@ -771,7 +896,27 @@ function IssueFormPage({ id }) {
                 value={form.nationality}
                 onChange={v => set("nationality", v)}
                 placeholder="Select nationality…"
-                options={window.PULSE_MOCK.NATIONALITIES.map(n => ({ value: n.name, label: n.name }))}
+                options={[
+                  "Afghan", "Albanian", "Algerian", "American", "Andorran", "Angolan", "Argentine", "Armenian", "Australian", "Austrian",
+                  "Azerbaijani", "Bahamian", "Bahraini", "Bangladeshi", "Barbadian", "Belarusian", "Belgian", "Belizean", "Beninese", "Bhutanese",
+                  "Bolivian", "Bosnian", "Botswanan", "Brazilian", "Bruneian", "Bulgarian", "Burkinabe", "Burundian", "Cambodian", "Cameroonian",
+                  "Canadian", "Cape Verdean", "Central African", "Chadian", "Chilean", "Chinese", "Colombian", "Comorian", "Congolese", "Costa Rican",
+                  "Croatian", "Cuban", "Cypriot", "Czech", "Danish", "Djiboutian", "Dominican", "Dutch", "East Timorese", "Ecuadorean",
+                  "Egyptian", "Emirati", "English", "Eritrean", "Estonian", "Ethiopian", "Fijian", "Filipino", "Finnish", "French",
+                  "Gabonese", "Gambian", "Georgian", "German", "Ghanaian", "Greek", "Grenadian", "Guatemalan", "Guinean", "Guyanese",
+                  "Haitian", "Honduran", "Hungarian", "Icelander", "Indian", "Indonesian", "Iranian", "Iraqi", "Irish", "Israeli",
+                  "Italian", "Ivorian", "Jamaican", "Japanese", "Jordanian", "Kazakhstani", "Kenyan", "Kuwaiti", "Kyrgyz", "Laotian",
+                  "Latvian", "Lebanese", "Liberian", "Libyan", "Liechtensteiner", "Lithuanian", "Luxembourger", "Macedonian", "Malagasy", "Malawian",
+                  "Malaysian", "Maldivian", "Malian", "Maltese", "Mauritanian", "Mauritian", "Mexican", "Micronesian", "Moldovan", "Monacan",
+                  "Mongolian", "Moroccan", "Mosotho", "Motswana", "Myanmar", "Namibian", "Nauruan", "Nepalese", "New Zealander", "Nicaraguan",
+                  "Nigerian", "Nigerien", "North Korean", "Northern Irish", "Norwegian", "Omani", "Pakistani", "Panamanian", "Papua New Guinean", "Paraguayan",
+                  "Peruvian", "Polish", "Portuguese", "Qatari", "Romanian", "Russian", "Rwandan", "Saint Lucian", "Salvadoran", "Samoan",
+                  "San Marinese", "Saudi", "Scottish", "Senegalese", "Serbian", "Seychellois", "Sierra Leonean", "Singaporean", "Slovakian", "Slovenian",
+                  "Solomon Islander", "Somali", "South African", "South Korean", "Spanish", "Sri Lankan", "Sudanese", "Surinamese", "Swazi", "Swedish",
+                  "Swiss", "Syrian", "Taiwanese", "Tajik", "Tanzanian", "Thai", "Togolese", "Tongan", "Trinidadian", "Tunisian",
+                  "Turkish", "Turkmen", "Tuvaluan", "Ugandan", "Ukrainian", "Uruguayan", "Uzbek", "Vanuatuan", "Vatican", "Venezuelan",
+                  "Vietnamese", "Welsh", "Yemeni", "Zambian", "Zimbabwean"
+                ].map(n => ({ value: n, label: n }))}
               />
             </FI>
             <FI label="Contact"><InI value={form.contact} onChange={v => set("contact", v)} icon="phone" placeholder="phone or email"/></FI>

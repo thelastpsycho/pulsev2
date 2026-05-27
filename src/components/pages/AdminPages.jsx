@@ -187,8 +187,22 @@ function UserFormDrawer({ user, onClose, onSave }) {
 function AdminRolesPage() {
   const [roles, setRoles] = useState(null);
   const [editing, setEditing] = useState(null);
-  const permissions = window.PULSE_MOCK.PERMISSIONS;
+  const [permissions, setPermissions] = useState([]);
   useEffect(() => { window.PulseAPI.Roles.list().then(r => setRoles(r.data)); }, []);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await window.PulseAPI.Permissions.list();
+        setPermissions(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch permissions:', error);
+        setPermissions([]);
+      }
+    };
+
+    fetchPermissions();
+  }, []);
 
   const save = async (data) => {
     if (editing === "new") { const r = await window.PulseAPI.Roles.create(data); setRoles(rs => [...rs, r.data]); window.toast.success(`${r.data.name} role created`); }
@@ -250,10 +264,24 @@ function AdminRolesPage() {
 
 function RoleFormDrawer({ role, onClose, onSave }) {
   const isNew = !role;
-  const permissions = window.PULSE_MOCK.PERMISSIONS;
+  const [permissions, setPermissions] = useState([]);
   const [form, setForm] = useState(role ? { ...role } : { name: "", description: "", permissions: [] });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const togglePerm = (id) => set("permissions", form.permissions.includes(id) ? form.permissions.filter(p => p !== id) : [...form.permissions, id]);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await window.PulseAPI.Permissions.list();
+        setPermissions(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch permissions:', error);
+        setPermissions([]);
+      }
+    };
+
+    fetchPermissions();
+  }, []);
 
   // group permissions by prefix
   const groups = {};
@@ -425,14 +453,29 @@ function AdminIssueTypesPage() {
 
 function TypeDrawer({ type, onClose, onSave }) {
   const isNew = !type;
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(type ? { ...type, issue_category_id: type.issue_category?.id } : { name: "", description: "", issue_category_id: 1, default_severity: "medium", is_active: true });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await window.PulseAPI.Categories.list();
+        setCategories(response.data.map(c => ({ value: c.id, label: c.name })) || []);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        setCategories([]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   return (
     <DrA open={true} onClose={onClose} title={isNew ? "New issue type" : `Edit ${type.name}`} width={400} footer={
       <><BA variant="ghost" onClick={onClose}>Cancel</BA><BA icon="check" onClick={() => onSave(form)}>{isNew ? "Create" : "Save"}</BA></>
     }>
       <FA label="Name" required><InA value={form.name} onChange={v => set("name", v)} autoFocus/></FA>
-      <FA label="Category"><SeA value={form.issue_category_id} onChange={v => set("issue_category_id", Number(v))} options={window.PULSE_MOCK.ISSUE_CATEGORIES.map(c => ({ value: c.id, label: c.name }))} placeholder=""/></FA>
+      <FA label="Category"><SeA value={form.issue_category_id} onChange={v => set("issue_category_id", Number(v))} options={form.categories || []} placeholder=""/></FA>
       <FA label="Default severity"><SeA value={form.default_severity} onChange={v => set("default_severity", v)} options={["urgent","high","medium","low"]} placeholder=""/></FA>
       <FA label="Description"><TaA value={form.description} onChange={v => set("description", v)} rows={2}/></FA>
       <FA label="Status"><TgA checked={form.is_active} onChange={v => set("is_active", v)} label={form.is_active ? "Active" : "Inactive"}/></FA>

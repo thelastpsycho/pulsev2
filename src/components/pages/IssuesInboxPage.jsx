@@ -12,7 +12,7 @@ const safeWindow = () => ({
 });
 
 const w = safeWindow();
-const IIB = w.UI.Icon; const AvIB = w.UI.Avatar; const PIB = w.UI.Pill; const PrIB = w.UI.PriorityPill; const StIB = w.UI.StatusPill; const BIB = w.UI.Button; const IBIB = w.UI.IconButton; const CIB = w.UI.Card; const CHIB = w.UI.CardHeader; const SIB = w.UI.Skeleton; const EIB = w.UI.EmptyState; const TIB = w.UI.TOKENS;
+const IIB = w.UI.Icon; const AvIB = w.UI.Avatar; const PIB = w.UI.Pill; const StIB = w.UI.StatusPill; const BIB = w.UI.Button; const IBIB = w.UI.IconButton; const CIB = w.UI.Card; const CHIB = w.UI.CardHeader; const SIB = w.UI.Skeleton; const EIB = w.UI.EmptyState; const TIB = w.UI.TOKENS;
 const FIB = w.Form.Field; const InIB = w.Form.Input; const TaIB = w.Form.Textarea; const SeIB = w.Form.Select; const MsIB = w.Form.MultiSelect; const CbIB = w.Form.Checkbox; const SgIB = w.Form.Segmented;
 const MdIB = w.Overlay.Modal; const DrIB = w.Overlay.Drawer; const DdIB = w.Overlay.Dropdown; const DiIB = w.Overlay.DropdownItem; const DdvIB = w.Overlay.DropdownDivider; const CnIB = w.Overlay.ConfirmDialog;
 const navIB = w.Layout.navigate; const LkIB = w.Layout.Link; const PhIB = w.Layout.PageHeader;
@@ -23,8 +23,9 @@ const navIB = w.Layout.navigate; const LkIB = w.Layout.Link; const PhIB = w.Layo
 function IssuesInboxPage({ selectedId }) {
   const [allIssues, setAllIssues] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [issueTypes, setIssueTypes] = useState([]);
   const [filters, setFilters] = useState({
-    status: "open", priority: "", department_id: "", search: "",
+    status: "open", issue_type_id: "", department_id: "", search: "",
     sort_by: "created_at", sort_order: "desc",
   });
 
@@ -33,13 +34,23 @@ function IssuesInboxPage({ selectedId }) {
     window.PulseAPI.Issues.list({
       ...filters, per_page: 200,
       department_id: filters.department_id ? Number(filters.department_id) : undefined,
-      priority: filters.priority || undefined,
+      issue_type_id: filters.issue_type_id ? Number(filters.issue_type_id) : undefined,
       status: filters.status || undefined,
       search: filters.search || undefined,
     }).then(r => { setAllIssues(r.data); setLoading(false); });
   }, [filters]);
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
+
+  // Load issue types
+  useEffect(() => {
+    window.PulseAPI.IssueTypes.list().then(r => {
+      setIssueTypes(r.data.filter(t => t.is_active));
+    }).catch(err => {
+      console.error('Failed to load issue types:', err);
+      setIssueTypes([]);
+    });
+  }, []);
 
   // Auto-select first issue if none selected and list loaded
   useEffect(() => {
@@ -55,6 +66,7 @@ function IssuesInboxPage({ selectedId }) {
       <IssuesListColumn
         issues={allIssues} loading={loading}
         selectedId={selectedId} filters={filters} setF={setF} setFilters={setFilters}
+        issueTypes={issueTypes}
       />
       <IssueDetailPaneInbox id={selectedId} onChange={reload}/>
     </div>
@@ -64,10 +76,24 @@ function IssuesInboxPage({ selectedId }) {
 // =====================================================================
 // LIST COLUMN
 // =====================================================================
-function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilters }) {
+function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilters, issueTypes }) {
   const [sortOpen, setSortOpen] = useState(false);
-  const departments = window.PULSE_MOCK.DEPARTMENTS;
+  const [departments, setDepartments] = useState([]);
   const sortRef = useRef();
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await window.PulseAPI.Departments.list();
+        setDepartments(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch departments:', error);
+        setDepartments([]);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   useEffect(() => {
     const h = (e) => { if (sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false); };
@@ -116,7 +142,6 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
                 }}>
                   <DiIB icon="clock" label="Newest first" active={filters.sort_by === "created_at"} onClick={() => { setF("sort_by", "created_at"); setSortOpen(false); }}/>
                   <DiIB icon="refresh" label="Recently updated" active={filters.sort_by === "updated_at"} onClick={() => { setF("sort_by", "updated_at"); setSortOpen(false); }}/>
-                  <DiIB icon="alert" label="By priority" active={filters.sort_by === "priority"} onClick={() => { setF("sort_by", "priority"); setSortOpen(false); }}/>
                 </div>
               )}
             </div>
@@ -142,16 +167,28 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
         {/* Status segmented */}
         <SgIB value={filters.status} onChange={v => setF("status", v)} options={tabs} style={{ width: "100%" }}/>
 
+        {/* Filter dropdowns */}
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <SeIB value={filters.issue_type_id} onChange={v => setF("issue_type_id", v)} placeholder="Any issue type" options={[
+            { value: "", label: "Any issue type" },
+            ...issueTypes.map(t => ({ value: t.id, label: t.name }))
+          ]} style={{ flex: 1 }}/>
+          <SeIB value={filters.department_id} onChange={v => setF("department_id", v)} placeholder="Any department" options={[
+            { value: "", label: "Any department" },
+            ...departments.map(d => ({ value: d.id, label: d.name }))
+          ]} style={{ flex: 1 }}/>
+        </div>
+
         {/* Active filter chips */}
-        {(filters.priority || filters.department_id) && (
+        {(filters.issue_type_id || filters.department_id) && (
           <div style={{ display: "flex", gap: 4, marginTop: 10, flexWrap: "wrap" }}>
-            {filters.priority && (
-              <button onClick={() => setF("priority", "")} style={{
+            {filters.issue_type_id && (
+              <button onClick={() => setF("issue_type_id", "")} style={{
                 display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 6px 3px 9px",
                 background: "rgba(0,122,255,0.10)", color: TIB.accent, fontSize: 11.5, fontWeight: 500,
                 border: "none", borderRadius: 6, cursor: "pointer",
               }}>
-                Priority: {filters.priority}
+                Type: {issueTypes.find(t => t.id === Number(filters.issue_type_id))?.name || filters.issue_type_id}
                 <IIB name="x" size={10} strokeWidth={2.5}/>
               </button>
             )}
@@ -188,8 +225,8 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
           <div style={{ padding: "32px 16px", textAlign: "center", color: TIB.mutedLight }}>
             <IIB name="inbox" size={28} color="#c7c7cc"/>
             <div style={{ marginTop: 10, fontSize: 13.5 }}>No issues match this view.</div>
-            {(filters.search || filters.priority || filters.department_id) && (
-              <BIB variant="ghost" size="sm" onClick={() => setFilters({ status: filters.status, priority: "", department_id: "", search: "", sort_by: "created_at", sort_order: "desc" })} style={{ marginTop: 12 }}>Clear filters</BIB>
+            {(filters.search || filters.issue_type_id || filters.department_id) && (
+              <BIB variant="ghost" size="sm" onClick={() => setFilters({ status: filters.status, issue_type_id: "", department_id: "", search: "", sort_by: "created_at", sort_order: "desc" })} style={{ marginTop: 12 }}>Clear filters</BIB>
             )}
           </div>
         ) : issues.map(i => (
@@ -227,7 +264,16 @@ function IssueListCard({ issue, selected }) {
             display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
           }}>{issue.title}</div>
           <div style={{ display: "flex", gap: 5, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <PrIB value={issue.priority}/>
+            {issue.issueTypes && issue.issueTypes.length > 0 ? (
+              issue.issueTypes.slice(0, 2).map((t, i) => (
+                <PIB key={t.id} color={TIB.purple} style={{ fontSize: 11 }}>{t.name}</PIB>
+              ))
+            ) : (
+              <PIB color={TIB.muted} style={{ fontSize: 11 }}>—</PIB>
+            )}
+            {issue.issueTypes && issue.issueTypes.length > 2 && (
+              <span style={{ fontSize: 10.5, color: TIB.accent, fontWeight: 500 }}>+{issue.issueTypes.length - 2}</span>
+            )}
             <StIB value={issue.status}/>
             {issue.assignedTo && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: TIB.muted, marginLeft: 2 }}>
@@ -317,7 +363,16 @@ function IssueDetailPaneInbox({ id, onChange }) {
           <span style={{ fontSize: 12.5, color: TIB.mutedLight, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>#{issue.id}</span>
           <span style={{ color: "#d2d2d7" }}>·</span>
           <StIB value={issue.status}/>
-          <PrIB value={issue.priority}/>
+          {issue.issueTypes && issue.issueTypes.length > 0 ? (
+            issue.issueTypes.slice(0, 2).map((t) => (
+              <PIB key={t.id} color={TIB.purple} style={{ fontSize: 11 }}>{t.name}</PIB>
+            ))
+          ) : (
+            <PIB color={TIB.muted} style={{ fontSize: 11 }}>—</PIB>
+          )}
+          {issue.issueTypes && issue.issueTypes.length > 2 && (
+            <span style={{ fontSize: 10.5, color: TIB.accent, fontWeight: 500 }}>+{issue.issueTypes.length - 2}</span>
+          )}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <BIB variant="ghost" size="sm" icon="user" onClick={() => setAssignOpen(true)}>{issue.assignedTo ? "Reassign" : "Assign"}</BIB>
@@ -349,8 +404,18 @@ function IssueDetailPaneInbox({ id, onChange }) {
         <div style={{ marginBottom: 22 }}>
           <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", margin: 0, lineHeight: 1.25 }}>{issue.title}</h1>
           <div style={{ fontSize: 13, color: TIB.muted, marginTop: 8, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            {issue.issueTypes?.[0] && <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><IIB name="tag" size={13} color={TIB.mutedLight}/>{issue.issueTypes[0].name}</span>}
-            {issue.issueTypes?.[0] && <span>·</span>}
+            {issue.issueTypes && issue.issueTypes.length > 0 && (
+              <>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <IIB name="tag" size={13} color={TIB.mutedLight}/>
+                  {issue.issueTypes.slice(0, 2).map((t, i) => (
+                    <span key={t.id}>{i > 0 && ", "}{t.name}</span>
+                  ))}
+                  {issue.issueTypes.length > 2 && <span>+{issue.issueTypes.length - 2} more</span>}
+                </span>
+                <span>·</span>
+              </>
+            )}
             <span>{fmtDateIB(issue.created_at)}</span>
             {issue.source && (<><span>·</span><span>via {issue.source}</span></>)}
           </div>
@@ -504,8 +569,23 @@ function TimelineEntryIB({ icon, color, actor, at, text }) {
 }
 
 function AssignModalIB({ onClose, onAssign, current }) {
-  const users = window.PULSE_MOCK.USERS.filter(u => u.is_active);
+  const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await window.PulseAPI.Users.list();
+        setUsers(response.data.filter(u => u.is_active));
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        setUsers([]);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
   const filtered = users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <MdIB title="Assign issue" onClose={onClose} width={400} padding={false}>

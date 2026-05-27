@@ -34,14 +34,10 @@ function App() {
     if (token) {
       window.PulseAPI.Auth.me()
         .then(r => {
-          console.log('Me endpoint response:', r);
-          console.log('User from /me:', r.user);
-          console.log('Permissions from /me:', r.user?.permissions);
           setUser(r.user);
           setAuthLoading(false);
         })
         .catch(err => {
-          console.log('Auth check failed, showing login:', err);
           localStorage.removeItem("gp_token");
           setAuthLoading(false);
         });
@@ -53,8 +49,6 @@ function App() {
 
   const onLogin = (r) => {
     localStorage.setItem("gp_token", r.token);
-    console.log('Logged in user:', r.user);
-    console.log('User permissions:', r.user?.permissions);
     setUser(r.user);
     if (path === "/login" || path === "/") navigate("/");
   };
@@ -86,10 +80,8 @@ function App() {
     page = <window.PageIssuesInbox selectedId={Number(m.id)}/>;
   } else if (path === "/reports" || path === "/reports/") {
     page = <window.PageReports tab="index"/>;
-  } else if (path === "/reports/monthly") {
-    page = <window.PageReports tab="monthly"/>;
-  } else if (path === "/reports/yearly") {
-    page = <window.PageReports tab="yearly"/>;
+  } else if (path === "/reports/custom") {
+    page = <window.PageReports tab="custom"/>;
   } else if (path === "/reports/logbook") {
     page = <window.PageReports tab="logbook"/>;
   } else if (path === "/statistics") {
