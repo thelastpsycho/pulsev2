@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePageTitle } from '../../lib/usePageTitle'
 // ============================================================================
 // Issues — Inbox layout (list column + detail pane), like the original
 // Guest Pulse Apple-mail-style design.
@@ -375,6 +376,10 @@ function IssueDetailPaneInbox({ id, onChange }) {
       window.removeEventListener('gp:issue:comment', handleAddComment);
     };
   }, [id, issue, close, reopen]);
+
+  // Update page title when issue loads
+  const pageTitle = issue ? `#${issue.id}: ${issue.title}` : null;
+  usePageTitle(pageTitle, [issue?.id, issue?.title]);
 
   if (!id) {
     return (

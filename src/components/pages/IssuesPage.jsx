@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { usePageTitle } from '../../lib/usePageTitle'
 // ============================================================================
 // Issues — list (data table) + detail + form
 // All styling via Tailwind classes.
@@ -395,6 +396,10 @@ function IssueDetailPage({ id }) {
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
 
+  // Update page title when issue loads
+  const pageTitle = issue ? `#${issue.id}: ${issue.title}` : null;
+  usePageTitle(pageTitle, [issue?.id, issue?.title]);
+
   if (loading || !issue) {
     return (
       <div className="p-8">
@@ -732,6 +737,9 @@ function IssueFormPage({ id }) {
       });
     }
   }, [id, isEdit]);
+
+  // For new issue form, set title explicitly
+  usePageTitle(isEdit ? null : 'New Issue', [isEdit]);
 
   useEffect(() => {
     Promise.all([

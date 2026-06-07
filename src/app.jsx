@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { usePageTitle } from './lib/usePageTitle'
 // ============================================================================
 // App root + routing
 // ============================================================================
@@ -27,6 +28,9 @@ function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const path = useHashRoute();
+
+  // Update page title based on current route (must be before conditional returns)
+  usePageTitle(null, [path]);
 
   // Auto-login as Sofia Reyes on mount for the demo. In production, check localStorage for token.
   useEffect(() => {
