@@ -54,7 +54,11 @@ function App() {
   const onLogin = (r) => {
     localStorage.setItem("gp_token", r.token);
     setUser(r.user);
-    if (path === "/login" || path === "/") navigate("/");
+    // Stay on current path after login (for mobile routes)
+    if (path === "/login" || path === "/") {
+      navigate("/");
+    }
+    // For mobile routes, stay there after login
   };
   const onSignOut = async () => {
     await window.PulseAPI.Auth.logout();
@@ -72,7 +76,18 @@ function App() {
   // route matching
   let page;
   let m;
-  if (path === "/" || path === "/dashboard") {
+  // Mobile routes (take precedence)
+  if (path === "/mobile") {
+    page = <window.MobileLayout/>;
+  } else if (path === "/mobile/issues") {
+    page = <window.MobileIssuesListPage/>;
+  } else if (path === "/mobile/issues/new") {
+    page = <window.MobileIssueFormPage mode="new"/>;
+  } else if ((m = matchPath("/mobile/issues/:id/edit", path))) {
+    page = <window.MobileIssueFormPage mode="edit" issueId={Number(m.id)}/>;
+  } else if ((m = matchPath("/mobile/issues/:id", path))) {
+    page = <window.MobileIssueDetailPage issueId={Number(m.id)}/>;
+  } else if (path === "/" || path === "/dashboard") {
     page = <window.PageDashboard user={user}/>;
   } else if (path === "/issues" || path === "/issues/") {
     page = <window.PageIssuesInbox/>;
@@ -108,9 +123,16 @@ function App() {
     page = <NotFound/>;
   }
 
+  // Check if this is a mobile route (should not be wrapped in AppLayout)
+  const isMobileRoute = path.startsWith('/mobile');
+
   return (
     <>
-      <AppLayout user={user} onSignOut={onSignOut}>{page}</AppLayout>
+      {isMobileRoute ? (
+        page
+      ) : (
+        <AppLayout user={user} onSignOut={onSignOut}>{page}</AppLayout>
+      )}
       <ToastHost/>
     </>
   );

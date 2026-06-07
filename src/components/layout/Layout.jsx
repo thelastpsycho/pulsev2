@@ -159,6 +159,13 @@ function Sidebar({ user, counts, collapsed }) {
 
       {/* User */}
       <div className="p-2.5 border-t border-black/[.06]">
+        {/* Mobile view link */}
+        <Link to="/mobile">
+          <div className="flex items-center gap-[9px] p-1.5 rounded-lg cursor-pointer hover:bg-black/[.04] mb-1">
+            <IconL name="smartphone" size={18} color={TL.mutedLight}/>
+            <div className="text-[12.5px] text-muted-light font-medium">Mobile View</div>
+          </div>
+        </Link>
         <Link to="/profile">
           <div className="flex items-center gap-[9px] p-1.5 rounded-lg cursor-pointer hover:bg-black/[.04]">
             <AvatarL name={user?.name} size={28}/>

@@ -81,6 +81,7 @@ function Icon({ name, size = 18, color = "currentColor", strokeWidth = 1.6, clas
     case "building":       return <svg {...props}><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 21V12h6v9M9 7h2M13 7h2M9 11h2M13 11h2"/></svg>;
     case "tags":           return <svg {...props}><path d="M20.6 13.4 13 21l-9-9V4h8l9 9z"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/></svg>;
     case "shield":         return <svg {...props}><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/><path d="m9 12 2 2 4-4"/></svg>;
+    case "smartphone":    return <svg {...props}><rect x="5" y="2" width="14" height="20" rx="2" strokeWidth="1.5"/><path d="M12 18h.01" strokeWidth="2"/></svg>;
     case "report":         return <svg {...props}><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h6M8 16h4"/></svg>;
     case "chart-bar":      return <svg {...props}><path d="M7 17v-6M12 17V7M17 17v-9M3 21h18"/></svg>;
     case "chart-line":     return <svg {...props}><path d="m3 17 6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>;

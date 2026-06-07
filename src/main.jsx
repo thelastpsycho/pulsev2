@@ -31,6 +31,15 @@ import './components/pages/AdminPages.jsx'
 // Reports
 import './components/reports/SimpleReportBuilder.jsx'
 
+// Mobile Components
+import './components/ui/MobileBottomNav.jsx'
+import './components/pages/MobileLayout.jsx'
+import './components/pages/mobile/MobileDashboardPage.jsx'
+import './components/pages/mobile/MobileIssuesListPage.jsx'
+import './components/pages/mobile/MobileIssueDetailPage.jsx'
+import './components/pages/mobile/MobileIssueFormPage.jsx'
+import './components/pages/mobile/MobileProfilePage.jsx'
+
 // App
 import { App } from './app.jsx'
 
