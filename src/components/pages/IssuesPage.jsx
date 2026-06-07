@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 // ============================================================================
 // Issues — list (data table) + detail + form
+// All styling via Tailwind classes.
 // ============================================================================
 
 // Helper functions to safely access window.Pulse objects
@@ -13,7 +14,7 @@ const safePulse = () => {
   return {
     UI: { Icon: () => null, Avatar: () => null, Pill: () => null, PriorityPill: () => null, StatusPill: () => null,
            Button: () => null, IconButton: () => null, Card: () => null, CardHeader: () => null, Skeleton: () => null,
-           EmptyState: () => null, TOKENS: {} },
+           EmptyState: () => null, TOKENS: {}, cx: (...xs) => xs.filter(Boolean).join(" ") },
     Form: { Field: () => null, Input: () => null, Textarea: () => null, Select: () => null, MultiSelect: () => null,
             SearchableSelect: () => null, Checkbox: () => null, Segmented: () => null },
     Overlay: { Modal: () => null, Drawer: () => null, Dropdown: () => null, DropdownItem: () => null,
@@ -25,11 +26,11 @@ const safePulse = () => {
 const pulse = safePulse();
 const II = pulse.UI.Icon; const AvI = pulse.UI.Avatar; const PI = pulse.UI.Pill; const PrI = pulse.UI.PriorityPill;
 const StI = pulse.UI.StatusPill; const BI = pulse.UI.Button; const IBI = pulse.UI.IconButton;
-const CI = pulse.UI.Card; const CHI = pulse.UI.CardHeader; const SI = pulse.UI.Skeleton; const EI = pulse.UI.EmptyState;
-const TI = pulse.UI.TOKENS;
+const CI = pulse.UI.Card; const SI = pulse.UI.Skeleton; const EI = pulse.UI.EmptyState;
+const TI = pulse.UI.TOKENS; const cxI = pulse.UI.cx || ((...xs) => xs.filter(Boolean).join(" "));
 const FI = pulse.Form.Field; const InI = pulse.Form.Input; const TaI = pulse.Form.Textarea; const SeI = pulse.Form.Select;
 const MsI = pulse.Form.MultiSelect; const SsI = pulse.Form.SearchableSelect; const CbI = pulse.Form.Checkbox; const SgI = pulse.Form.Segmented;
-const MdI = pulse.Overlay.Modal; const DrI = pulse.Overlay.Drawer; const DdI = pulse.Overlay.Dropdown;
+const MdI = pulse.Overlay.Modal; const DdI = pulse.Overlay.Dropdown;
 const DiI = pulse.Overlay.DropdownItem; const DdvI = pulse.Overlay.DropdownDivider; const CnI = pulse.Overlay.ConfirmDialog;
 const navI = pulse.Layout.navigate; const LkI = pulse.Layout.Link; const PhI = pulse.Layout.PageHeader; const TbI = pulse.Layout.Tabs;
 
@@ -44,14 +45,15 @@ function IssuesListPage() {
     status: "open", issue_type_id: "", department_id: "", search: "",
     page: 1, per_page: 25, sort_by: "created_at", sort_order: "desc",
   });
-  const [view, setView] = useState("table"); // table | kanban
+  const [view, setView] = useState("table");
   const [selected, setSelected] = useState(new Set());
   const [departments, setDepartments] = useState([]);
   const [issueTypes, setIssueTypes] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    // Defer setLoading to avoid synchronous setState in effect
+    Promise.resolve().then(() => setLoading(true));
     window.PulseAPI.Issues.list({
       ...filters,
       department_id: filters.department_id ? Number(filters.department_id) : undefined,
@@ -63,9 +65,9 @@ function IssuesListPage() {
       setIssues(r.data); setMeta(r.meta); setLoading(false);
     });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(filters)]);
 
-  // Fetch departments and issue types
   useEffect(() => {
     const fetchOptions = async () => {
       try {
@@ -81,7 +83,6 @@ function IssuesListPage() {
         setIssueTypes([]);
       }
     };
-
     fetchOptions();
   }, []);
 
@@ -118,49 +119,44 @@ function IssuesListPage() {
           </>
         }
         tabs={
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div className="flex items-center justify-between gap-3">
             <TbI value={filters.status} onChange={v => setF("status", v)} items={tabs}/>
           </div>
         }
       />
 
       {/* Filter row */}
-      <div style={{ padding: "16px 28px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-        <div style={{ flex: "1 1 280px", maxWidth: 360 }}>
+      <div className="px-7 pt-4 pb-3 flex gap-2 items-center flex-wrap border-b border-black/6">
+        <div className="flex-[1_1_280px] max-w-[360px]">
           <InI value={filters.search} onChange={v => setF("search", v)} icon="search" placeholder="Search by title, guest, room, ID…"/>
         </div>
         <SeI value={filters.issue_type_id} onChange={v => setF("issue_type_id", v)} placeholder="Any issue type" options={[
           { value: "", label: "Any issue type" },
           ...issueTypes.filter(t => t.is_active).map(t => ({ value: t.id, label: t.name })),
-        ]} style={{ width: 180 }}/>
+        ]} className="w-45"/>
         <SeI value={filters.department_id} onChange={v => setF("department_id", v)} placeholder="Any department" options={[
           { value: "", label: "Any department" },
           ...departments.filter(d => d.is_active).map(d => ({ value: d.id, label: d.name })),
-        ]} style={{ width: 200 }}/>
+        ]} className="w-50"/>
         {(filters.issue_type_id || filters.department_id || filters.search) && (
           <BI variant="ghost" size="sm" icon="x" onClick={() => setFilters({ ...filters, search: "", issue_type_id: "", department_id: "", page: 1 })}>Clear</BI>
         )}
-        <div style={{ flex: 1 }}/>
-        <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12.5, color: TI.muted }}>
+        <div className="flex-1"/>
+        <div className="flex gap-1.5 items-center text-[12.5px] text-muted">
           Sort:
           <SeI value={filters.sort_by} onChange={v => setF("sort_by", v)} options={[
             { value: "created_at", label: "Newest" },
             { value: "updated_at", label: "Recently updated" },
             { value: "title", label: "Title" },
-          ]} style={{ width: 170 }} placeholder=""/>
+          ]} className="w-42" placeholder=""/>
         </div>
       </div>
 
       {/* Bulk actions bar */}
       {selected.size > 0 && (
-        <div style={{
-          padding: "10px 28px", background: "rgba(0,122,255,0.06)",
-          borderBottom: "1px solid rgba(0,122,255,0.15)",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          fontSize: 13, color: TI.accent, fontWeight: 500,
-        }}>
+        <div className="px-7 py-2.5 bg-accent/6 border-b border-accent/15 flex items-center justify-between text-sm text-accent font-medium">
           <span>{selected.size} selected</span>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div className="flex gap-1.5">
             <BI size="sm" variant="ghost" icon="check">Close</BI>
             <BI size="sm" variant="ghost" icon="user">Assign</BI>
             <BI size="sm" variant="ghost" icon="download">Export</BI>
@@ -185,9 +181,9 @@ function IssuesListPage() {
 function IssuesTable({ issues, loading, selected, toggleAll, toggleOne }) {
   if (loading) {
     return (
-      <div style={{ padding: "16px 28px" }}>
+      <div className="px-7 pt-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
+          <div key={i} className="flex gap-3 py-3 border-b border-black/4">
             <SI width={16} height={16}/><SI width={60} height={14}/><SI width="32%" height={14}/><SI width={120} height={14}/><SI width={60} height={20}/>
           </div>
         ))}
@@ -199,10 +195,10 @@ function IssuesTable({ issues, loading, selected, toggleAll, toggleOne }) {
       action={<BI icon="plus" onClick={() => navI("/issues/new")}>New issue</BI>}/>;
   }
   return (
-    <div style={{ padding: "8px 28px 24px" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+    <div className="px-7 pt-2 pb-6">
+      <table className="w-full border-collapse text-[13.5px]">
         <thead>
-          <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+          <tr className="border-b border-black/8">
             <Th width="32"><CbI checked={selected.size === issues.length && issues.length > 0} onChange={toggleAll}/></Th>
             <Th width="70">ID</Th>
             <Th>Title</Th>
@@ -226,7 +222,7 @@ function IssuesTable({ issues, loading, selected, toggleAll, toggleOne }) {
 }
 
 function Th({ children, width }) {
-  return <th style={{ padding: "10px 8px", textAlign: "left", fontSize: 11.5, fontWeight: 600, color: TI.mutedLight, textTransform: "uppercase", letterSpacing: "0.04em", width }}>{children}</th>;
+  return <th className="px-2 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-wider" style={{ width }}>{children}</th>;
 }
 
 function IssueRow({ issue, selected, onToggle }) {
@@ -234,17 +230,16 @@ function IssueRow({ issue, selected, onToggle }) {
   return (
     <tr
       onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      style={{
-        borderBottom: "1px solid rgba(0,0,0,0.04)",
-        background: selected ? "rgba(0,122,255,0.05)" : (h ? "rgba(0,0,0,0.02)" : "transparent"),
-        cursor: "pointer", transition: "background 100ms",
-      }}
+      className={cxI(
+        "border-b border-black/4 cursor-pointer transition-colors duration-100",
+        selected ? "bg-accent/5" : (h ? "bg-black/2" : "bg-transparent")
+      )}
       onClick={(e) => { if (e.target.closest("button") || e.target.closest("input")) return; navI(`/issues/${issue.id}`); }}>
-      <td style={{ padding: "10px 8px" }} onClick={e => e.stopPropagation()}><CbI checked={selected} onChange={onToggle}/></td>
-      <td style={{ padding: "10px 8px", color: TI.muted, fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 500 }}>#{issue.id}</td>
-      <td style={{ padding: "10px 8px" }}>
-        <div style={{ fontWeight: 500, color: TI.text, letterSpacing: "-0.005em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 380 }}>{issue.title}</div>
-        <div style={{ fontSize: 12, color: TI.mutedLight, marginTop: 1 }}>
+      <td className="px-2 py-2.5" onClick={e => e.stopPropagation()}><CbI checked={selected} onChange={onToggle}/></td>
+      <td className="px-2 py-2.5 text-muted tabular-nums text-[12.5px] font-medium">#{issue.id}</td>
+      <td className="px-2 py-2.5">
+        <div className="font-medium text-text tracking-body truncate max-w-95">{issue.title}</div>
+        <div className="text-xs text-muted-light mt-0.5">
           {issue.issueTypes && issue.issueTypes.length > 0
             ? issue.issueTypes.slice(0, 2).map((t, i) => (
                 <span key={t.id}>
@@ -253,39 +248,39 @@ function IssueRow({ issue, selected, onToggle }) {
               ))
             : "—"}
           {issue.issueTypes && issue.issueTypes.length > 2 && (
-            <span style={{ color: TI.accent, fontWeight: 500 }}> +{issue.issueTypes.length - 2} more</span>
+            <span className="text-accent font-medium"> +{issue.issueTypes.length - 2} more</span>
           )}
         </div>
       </td>
-      <td style={{ padding: "10px 8px", fontSize: 12.5 }}>
-        <div style={{ color: TI.text }}>{issue.name || "—"}</div>
-        <div style={{ color: TI.mutedLight, marginTop: 1 }}>{issue.room_number || issue.location}</div>
+      <td className="px-2 py-2.5 text-[12.5px]">
+        <div className="text-text">{issue.name || "—"}</div>
+        <div className="text-muted-light mt-0.5">{issue.room_number || issue.location}</div>
       </td>
-      <td style={{ padding: "10px 8px" }}>
-        {issue.departments?.map(d => <PI key={d.id} color={TI.muted} style={{ marginRight: 4 }}>{d.code || d.name}</PI>)}
+      <td className="px-2 py-2.5">
+        {issue.departments?.map(d => <PI key={d.id} color={TI.muted} className="mr-1">{d.code || d.name}</PI>)}
       </td>
-      <td style={{ padding: "10px 8px" }}>
+      <td className="px-2 py-2.5">
         {issue.issueTypes && issue.issueTypes.length > 0
-          ? issue.issueTypes.slice(0, 2).map((t, i) => (
-              <PI key={t.id} color={TI.purple} style={{ marginRight: 4 }}>{t.name}</PI>
+          ? issue.issueTypes.slice(0, 2).map((t) => (
+              <PI key={t.id} color={TI.purple} className="mr-1">{t.name}</PI>
             ))
-          : <span style={{ fontSize: 12, color: TI.mutedLight, fontStyle: "italic" }}>—</span>}
+          : <span className="text-xs text-muted-light italic">—</span>}
         {issue.issueTypes && issue.issueTypes.length > 2 && (
-          <span style={{ fontSize: 11.5, color: TI.accent, fontWeight: 500 }}>+{issue.issueTypes.length - 2}</span>
+          <span className="text-[11.5px] text-accent font-medium">+{issue.issueTypes.length - 2}</span>
         )}
       </td>
-      <td style={{ padding: "10px 8px" }}><StI value={issue.status}/></td>
-      <td style={{ padding: "10px 8px" }}>
+      <td className="px-2 py-2.5"><StI value={issue.status}/></td>
+      <td className="px-2 py-2.5">
         {issue.assignedTo ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="flex items-center gap-1.5">
             <AvI name={issue.assignedTo.name} size={22}/>
-            <span style={{ fontSize: 12.5, color: TI.textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 90 }}>{issue.assignedTo.name.split(" ")[0]}</span>
+            <span className="text-[12.5px] text-text-secondary truncate max-w-22">{issue.assignedTo.name.split(" ")[0]}</span>
           </div>
-        ) : <span style={{ fontSize: 12, color: TI.mutedLight, fontStyle: "italic" }}>Unassigned</span>}
+        ) : <span className="text-xs text-muted-light italic">Unassigned</span>}
       </td>
-      <td style={{ padding: "10px 8px", fontSize: 12, color: TI.mutedLight, fontVariantNumeric: "tabular-nums" }}>{timeAgoI(issue.updated_at || issue.created_at)}</td>
-      <td style={{ padding: "10px 8px" }} onClick={e => e.stopPropagation()}>
-        <DdI trigger={<button style={{ background: "none", border: "none", padding: 4, cursor: "pointer", borderRadius: 6 }}><II name="more" size={15} color={TI.mutedLight}/></button>} width={170}>
+      <td className="px-2 py-2.5 text-xs text-muted-light tabular-nums">{timeAgoI(issue.updated_at || issue.created_at)}</td>
+      <td className="px-2 py-2.5" onClick={e => e.stopPropagation()}>
+        <DdI trigger={<button className="bg-none border-none p-1 cursor-pointer rounded-md"><II name="more" size={15} color={TI.mutedLight}/></button>} width={170}>
           <DiI icon="eye" label="View" onClick={() => navI(`/issues/${issue.id}`)}/>
           <DiI icon="edit" label="Edit" onClick={() => navI(`/issues/${issue.id}/edit`)}/>
           <DiI icon="user" label="Assign"/>
@@ -301,9 +296,8 @@ function IssueRow({ issue, selected, onToggle }) {
 }
 
 function IssuesKanban({ issues, loading, issueTypes }) {
-  if (loading) return <div style={{ padding: 28 }}><SI height={120}/></div>;
+  if (loading) return <div className="p-7"><SI height={120}/></div>;
 
-  // Group by issue types, default to "Uncategorized" for issues without types
   const columns = issueTypes.length > 0
     ? [
         ...issueTypes.filter(t => t.is_active).map(t => ({ id: t.id, label: t.name, color: TI.purple })),
@@ -312,7 +306,7 @@ function IssuesKanban({ issues, loading, issueTypes }) {
     : [{ id: "all", label: "All Issues", color: TI.purple }];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(columns.length, 4)}, 1fr)`, gap: 12, padding: "16px 28px 24px" }}>
+    <div className="grid gap-3 p-[16px_28px_24px]" style={{ gridTemplateColumns: `repeat(${Math.min(columns.length, 4)}, 1fr)` }}>
       {columns.map(col => {
         const items = col.id === "none"
           ? issues.filter(i => !i.issueTypes || i.issueTypes.length === 0)
@@ -321,44 +315,32 @@ function IssuesKanban({ issues, loading, issueTypes }) {
             : issues.filter(i => i.issueTypes && i.issueTypes.some(t => t.id === col.id));
 
         return (
-          <div key={col.id} style={{ background: "#fafafa", borderRadius: 12, padding: 8, border: "1px solid rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px 10px", fontSize: 12.5, fontWeight: 600, color: TI.text }}>
-              <div style={{ width: 8, height: 8, borderRadius: 8, background: col.color }}/>
+          <div key={col.id} className="bg-bg-soft rounded-xl p-2 border border-black/5">
+            <div className="flex items-center gap-1.5 p-[6px_8px_10px] text-[12.5px] font-semibold text-text">
+              <div className="w-2 h-2 rounded-full" style={{ background: col.color }}/>
               {col.label}
-              <span style={{ marginLeft: "auto", fontSize: 11.5, color: TI.mutedLight, fontWeight: 500 }}>{items.length}</span>
+              <span className="ml-auto text-[11.5px] text-muted-light font-medium">{items.length}</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 60 }}>
+            <div className="flex flex-col gap-1.5 min-h-15">
               {items.map(i => (
                 <LkI key={i.id} to={`/issues/${i.id}`}>
-                  <div style={{
-                    background: "#fff", borderRadius: 10, padding: 10,
-                    border: "1px solid rgba(0,0,0,0.05)", cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)"}
-                  onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}
-                  >
-                    <div style={{ fontSize: 11.5, color: TI.mutedLight, fontVariantNumeric: "tabular-nums", marginBottom: 3 }}>#{i.id}</div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: TI.text, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.005em" }}>{i.title}</div>
-                    <div style={{ fontSize: 11.5, color: TI.mutedLight, marginTop: 4 }}>{i.room_number || i.location}</div>
+                  <div className="bg-white rounded-xl p-2.5 border border-black/5 cursor-pointer hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow">
+                    <div className="text-[11.5px] text-muted-light tabular-nums mb-0.75">#{i.id}</div>
+                    <div className="text-sm font-medium text-text leading-snug line-clamp-2">{i.title}</div>
+                    <div className="text-[11.5px] text-muted-light mt-1">{i.room_number || i.location}</div>
                     {i.departments && i.departments.length > 0 && (
-                      <div style={{ fontSize: 11, color: TI.muted, marginTop: 3, display: "flex", flexWrap: "wrap", gap: 3 }}>
+                      <div className="text-xs text-muted mt-0.75 flex flex-wrap gap-0.75">
                         {i.departments.slice(0, 2).map(d => (
-                          <span key={d.id} style={{
-                            background: "rgba(0,0,0,0.05)", borderRadius: 4, padding: "2px 6px",
-                            fontSize: 10, fontWeight: 500, color: TI.mutedLight
-                          }}>{d.code || d.name}</span>
+                          <span key={d.id} className="bg-black/5 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-light">{d.code || d.name}</span>
                         ))}
                         {i.departments.length > 2 && (
-                          <span style={{
-                            background: "rgba(0,122,255,0.08)", borderRadius: 4, padding: "2px 6px",
-                            fontSize: 10, fontWeight: 500, color: TI.accent
-                          }}>+{i.departments.length - 2}</span>
+                          <span className="bg-accent/8 rounded px-1.5 py-0.5 text-[10px] font-medium text-accent">+{i.departments.length - 2}</span>
                         )}
                       </div>
                     )}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                    <div className="flex items-center justify-between mt-2">
                       <StI value={i.status}/>
-                      {i.assignedTo ? <AvI name={i.assignedTo.name} size={20}/> : <span style={{ fontSize: 10.5, color: TI.mutedLight }}>Unassigned</span>}
+                      {i.assignedTo ? <AvI name={i.assignedTo.name} size={20}/> : <span className="text-[10.5px] text-muted-light">Unassigned</span>}
                     </div>
                   </div>
                 </LkI>
@@ -376,11 +358,11 @@ function Pagination({ meta, onPage }) {
   const from = (current_page - 1) * per_page + 1;
   const to = Math.min(current_page * per_page, total);
   return (
-    <div style={{ padding: "12px 28px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <div style={{ fontSize: 12.5, color: TI.muted }}>{from}–{to} of {total}</div>
-      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+    <div className="px-7 pb-6 pt-3 flex items-center justify-between">
+      <div className="text-[12.5px] text-muted">{from}–{to} of {total}</div>
+      <div className="flex gap-1 items-center">
         <BI size="sm" variant="ghost" icon="chevron-left" disabled={current_page === 1} onClick={() => onPage(current_page - 1)}>Prev</BI>
-        <span style={{ fontSize: 12.5, color: TI.muted, padding: "0 8px", fontVariantNumeric: "tabular-nums" }}>Page {current_page} of {last_page}</span>
+        <span className="text-[12.5px] text-muted px-2 tabular-nums">Page {current_page} of {last_page}</span>
         <BI size="sm" variant="ghost" iconRight="chevron-right" disabled={current_page === last_page} onClick={() => onPage(current_page + 1)}>Next</BI>
       </div>
     </div>
@@ -399,7 +381,7 @@ function timeAgoI(iso) {
 // =====================================================================
 // ISSUE DETAIL PAGE
 // =====================================================================
-function IssueDetailPage({ id, user }) {
+function IssueDetailPage({ id }) {
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
@@ -413,41 +395,12 @@ function IssueDetailPage({ id, user }) {
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
 
-  // Debug: Log issue status when it changes
-  useEffect(() => {
-    if (issue) {
-      console.log('Issue status:', issue.status);
-      console.log('Issue data:', issue);
-      console.log('Status type:', typeof issue.status);
-      console.log('Status === "open":', issue.status === "open");
-      console.log('Status === "closed":', issue.status === "closed");
-
-      // Add global test function
-      window.testReopen = async () => {
-        console.log('Manual test: Attempting to reopen issue', id);
-        console.log('Current status:', issue.status);
-        try {
-          const result = await window.PulseAPI.Issues.reopen(id);
-          console.log('Reopen result:', result);
-          window.toast.success('Manual reopen successful!');
-        } catch (error) {
-          console.error('Manual reopen failed:', error);
-          window.toast.error('Manual reopen failed: ' + JSON.stringify(error));
-        }
-      };
-
-      return () => {
-        delete window.testReopen;
-      };
-    }
-  }, [issue, id]);
-
   if (loading || !issue) {
     return (
-      <div style={{ padding: 32 }}>
+      <div className="p-8">
         <SI width={240} height={28}/>
-        <SI width={420} height={16} style={{ marginTop: 10 }}/>
-        <SI height={160} style={{ marginTop: 20 }}/>
+        <SI width={420} height={16} className="mt-2.5"/>
+        <SI height={160} className="mt-5"/>
       </div>
     );
   }
@@ -463,17 +416,12 @@ function IssueDetailPage({ id, user }) {
     }
   };
   const reopen = async () => {
-    console.log('Attempting to reopen issue:', id);
     try {
-      console.log('Calling reopen API...');
-      const response = await window.PulseAPI.Issues.reopen(id);
-      console.log('Reopen response:', response);
+      await window.PulseAPI.Issues.reopen(id);
       window.toast.success(`Issue #${id} reopened`);
       reload();
     } catch (error) {
       console.error('Failed to reopen issue:', error);
-      console.error('Error status:', error.status);
-      console.error('Error message:', error.message);
       window.toast.error('Failed to reopen issue: ' + (error.message || 'Unknown error'));
     }
   };
@@ -515,43 +463,38 @@ function IssueDetailPage({ id, user }) {
         }
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 0, padding: "0 28px 60px", maxWidth: 1400 }}>
+      <div className="grid grid-cols-[1fr_320px] gap-0 px-7 pb-[60px] max-w-[1400px]">
         {/* Main column */}
-        <div style={{ paddingRight: 28, minWidth: 0 }}>
-          {/* meta */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12.5, color: TI.mutedLight, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>#{issue.id}</span>
-            <span style={{ color: TI.mutedLight }}>·</span>
+        <div className="pr-7 min-w-0">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-[12.5px] text-muted-light tabular-nums font-medium">#{issue.id}</span>
+            <span className="text-muted-light">·</span>
             <StI value={issue.status}/>
             <PrI value={issue.priority}/>
-            <span style={{ color: TI.mutedLight }}>·</span>
-            <span style={{ fontSize: 12.5, color: TI.muted }}>Created {fmtDateI(issue.created_at)} by {issue.createdBy?.name || "Unknown"}</span>
+            <span className="text-muted-light">·</span>
+            <span className="text-[12.5px] text-muted">Created {fmtDateI(issue.created_at)} by {issue.createdBy?.name || "Unknown"}</span>
           </div>
 
-          <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.025em", margin: "0 0 8px", lineHeight: 1.25 }}>
+          <h1 className="text-[26px] font-semibold tracking-tight mb-2 leading-snug">
             {issue.title}
           </h1>
 
-          <div style={{ marginTop: 24, marginBottom: 32 }}>
+          <div className="mt-6 mb-8">
             <SectionTitle>Description</SectionTitle>
-            <div style={{ fontSize: 14.5, lineHeight: 1.6, color: TI.text, whiteSpace: "pre-wrap" }}>{issue.description || <span style={{ color: TI.mutedLight, fontStyle: "italic" }}>No description provided.</span>}</div>
+            <div className="text-[14.5px] leading-[1.6] text-text whitespace-pre-wrap">{issue.description || <span className="text-muted-light italic">No description provided.</span>}</div>
           </div>
 
           {issue.recovery && (
-            <div style={{ marginBottom: 32 }}>
+            <div className="mb-8">
               <SectionTitle>Recovery / resolution</SectionTitle>
-              <div style={{
-                background: "rgba(52,199,89,0.06)", border: "1px solid rgba(52,199,89,0.2)",
-                borderRadius: 12, padding: "14px 16px",
-                display: "flex", gap: 12, alignItems: "flex-start",
-              }}>
-                <div style={{ width: 26, height: 26, borderRadius: 26, background: TI.success, display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <div className="bg-success/6 border border-success/20 rounded-[24px] px-4 py-3.5 flex gap-3 items-start">
+                <div className="w-[26px] h-[26px] rounded-full bg-success grid place-items-center shrink-0">
                   <II name="gift" size={14} color="#fff" strokeWidth={2}/>
                 </div>
-                <div style={{ flex: 1, fontSize: 14, lineHeight: 1.55, color: TI.text }}>
+                <div className="flex-1 text-[14px] leading-[1.55] text-text">
                   {issue.recovery}
                   {issue.recovery_cost > 0 && (
-                    <div style={{ marginTop: 4, fontSize: 12.5, color: TI.muted }}>
+                    <div className="mt-1 text-[12.5px] text-muted">
                       Cost: IDR {issue.recovery_cost.toLocaleString()}
                     </div>
                   )}
@@ -560,23 +503,21 @@ function IssueDetailPage({ id, user }) {
             </div>
           )}
 
-          {/* Comments */}
-          <div style={{ marginBottom: 32 }}>
+          <div className="mb-8">
             <SectionTitle>Comments &amp; activity</SectionTitle>
-            <div style={{ position: "relative", paddingLeft: 14 }}>
-              <div style={{ position: "absolute", left: 14, top: 6, bottom: 28, width: 1, background: "rgba(0,0,0,0.08)" }}/>
-              {(issue.comments || []).length === 0 && <div style={{ paddingLeft: 14, color: TI.mutedLight, fontSize: 13.5, fontStyle: "italic" }}>No comments yet.</div>}
+            <div className="relative pl-3.5">
+              <div className="absolute left-3.5 top-1.5 bottom-7 w-px bg-black/8"/>
+              {(issue.comments || []).length === 0 && <div className="pl-3.5 text-muted-light text-[13.5px] italic">No comments yet.</div>}
               {(issue.comments || []).map(c => <Comment key={c.id} c={c}/>)}
             </div>
           </div>
 
-          {/* Add comment */}
           {issue.status === "open" && (
             <CI>
-              <div style={{ padding: "14px 16px" }}>
-                <TaI value={comment} onChange={setComment} placeholder="Write an update or internal note…" rows={3} style={{ border: "none", padding: 0, boxShadow: "none" }}/>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                  <div style={{ display: "flex", gap: 4 }}>
+              <div className="px-4 py-3.5">
+                <TaI value={comment} onChange={setComment} placeholder="Write an update or internal note…" rows={3} className="border-none p-0 shadow-none"/>
+                <div className="flex justify-between items-center mt-2">
+                  <div className="flex gap-1">
                     <IBI icon="paperclip" size={26}/>
                     <IBI icon="image" size={26}/>
                   </div>
@@ -588,7 +529,7 @@ function IssueDetailPage({ id, user }) {
         </div>
 
         {/* Right sidebar */}
-        <aside style={{ borderLeft: "1px solid rgba(0,0,0,0.06)", paddingLeft: 24 }}>
+        <aside className="border-l border-black/6 pl-6">
           <SidebarMeta label="Status">
             <StI value={issue.status}/>
           </SidebarMeta>
@@ -597,48 +538,48 @@ function IssueDetailPage({ id, user }) {
           </SidebarMeta>
           <SidebarMeta label="Assigned to">
             {issue.assignedTo ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="flex items-center gap-2">
                 <AvI name={issue.assignedTo.name} size={24}/>
-                <span style={{ fontSize: 13, color: TI.text, fontWeight: 500 }}>{issue.assignedTo.name}</span>
+                <span className="text-[13px] text-text font-medium">{issue.assignedTo.name}</span>
               </div>
             ) : (
-              <button onClick={() => setAssignOpen(true)} style={{ background: "none", border: "none", padding: 0, color: TI.accent, fontSize: 13, cursor: "pointer", fontWeight: 500 }}>+ Assign</button>
+              <button onClick={() => setAssignOpen(true)} className="bg-none border-none p-0 text-accent text-[13px] cursor-pointer font-medium">+ Assign</button>
             )}
           </SidebarMeta>
           <SidebarMeta label="Departments">
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {issue.departments?.length ? issue.departments.map(d => <PI key={d.id} color={TI.muted}>{d.name}</PI>) : <span style={{ fontSize: 12.5, color: TI.mutedLight, fontStyle: "italic" }}>None</span>}
+            <div className="flex flex-wrap gap-1">
+              {issue.departments?.length ? issue.departments.map(d => <PI key={d.id} color={TI.muted}>{d.name}</PI>) : <span className="text-[12.5px] text-muted-light italic">None</span>}
             </div>
           </SidebarMeta>
           <SidebarMeta label="Issue type">
-            {issue.issueTypes?.length ? issue.issueTypes.map(t => <PI key={t.id} color={TI.purple}>{t.name}</PI>) : <span style={{ fontSize: 12.5, color: TI.mutedLight, fontStyle: "italic" }}>—</span>}
+            {issue.issueTypes?.length ? issue.issueTypes.map(t => <PI key={t.id} color={TI.purple}>{t.name}</PI>) : <span className="text-[12.5px] text-muted-light italic">—</span>}
           </SidebarMeta>
 
-          <div style={{ height: 1, background: "rgba(0,0,0,0.06)", margin: "14px 0 14px" }}/>
+          <div className="h-px bg-black/6 my-3.5"/>
 
           <SidebarMeta label="Guest">
-            <div style={{ fontSize: 13.5, color: TI.text, fontWeight: 500 }}>{issue.name || "—"}</div>
-            {issue.nationality && <div style={{ fontSize: 12, color: TI.muted, marginTop: 1 }}>{issue.nationality}</div>}
+            <div className="text-[13.5px] text-text font-medium">{issue.name || "—"}</div>
+            {issue.nationality && <div className="text-[12px] text-muted mt-0.5">{issue.nationality}</div>}
           </SidebarMeta>
-          <SidebarMeta label="Room"><span style={{ fontSize: 13.5, color: TI.text }}>{issue.room_number || issue.location || "—"}</span></SidebarMeta>
+          <SidebarMeta label="Room"><span className="text-[13.5px] text-text">{issue.room_number || issue.location || "—"}</span></SidebarMeta>
           <SidebarMeta label="Stay">
             {issue.checkin_date && issue.checkout_date
-              ? <span style={{ fontSize: 13, color: TI.text }}>{fmtDateShort(issue.checkin_date)} → {fmtDateShort(issue.checkout_date)}</span>
-              : <span style={{ fontSize: 12.5, color: TI.mutedLight, fontStyle: "italic" }}>—</span>}
+              ? <span className="text-[13px] text-text">{fmtDateShort(issue.checkin_date)} → {fmtDateShort(issue.checkout_date)}</span>
+              : <span className="text-[12.5px] text-muted-light italic">—</span>}
           </SidebarMeta>
           <SidebarMeta label="Contact">
-            {issue.contact ? <span style={{ fontSize: 13, color: TI.text, wordBreak: "break-all" }}>{issue.contact}</span> : <span style={{ fontSize: 12.5, color: TI.mutedLight, fontStyle: "italic" }}>—</span>}
+            {issue.contact ? <span className="text-[13px] text-text break-all">{issue.contact}</span> : <span className="text-[12.5px] text-muted-light italic">—</span>}
           </SidebarMeta>
-          <SidebarMeta label="Source"><span style={{ fontSize: 13, color: TI.text }}>{issue.source || "—"}</span></SidebarMeta>
+          <SidebarMeta label="Source"><span className="text-[13px] text-text">{issue.source || "—"}</span></SidebarMeta>
 
-          <div style={{ height: 1, background: "rgba(0,0,0,0.06)", margin: "14px 0 14px" }}/>
+          <div className="h-px bg-black/6 my-3.5"/>
 
-          <SidebarMeta label="Created"><span style={{ fontSize: 12.5, color: TI.text }}>{fmtDateI(issue.created_at)}</span></SidebarMeta>
-          <SidebarMeta label="Updated"><span style={{ fontSize: 12.5, color: TI.text }}>{fmtDateI(issue.updated_at)}</span></SidebarMeta>
+          <SidebarMeta label="Created"><span className="text-[12.5px] text-text">{fmtDateI(issue.created_at)}</span></SidebarMeta>
+          <SidebarMeta label="Updated"><span className="text-[12.5px] text-text">{fmtDateI(issue.updated_at)}</span></SidebarMeta>
           {issue.closed_at && (
             <SidebarMeta label="Closed">
-              <div style={{ fontSize: 12.5, color: TI.text }}>{fmtDateI(issue.closed_at)}</div>
-              {issue.closedBy && <div style={{ fontSize: 12, color: TI.muted, marginTop: 1 }}>by {issue.closedBy.name}</div>}
+              <div className="text-[12.5px] text-text">{fmtDateI(issue.closed_at)}</div>
+              {issue.closedBy && <div className="text-[12px] text-muted mt-0.5">by {issue.closedBy.name}</div>}
             </SidebarMeta>
           )}
         </aside>
@@ -652,13 +593,13 @@ function IssueDetailPage({ id, user }) {
 }
 
 function SectionTitle({ children }) {
-  return <div style={{ fontSize: 11.5, color: TI.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px 0" }}>{children}</div>;
+  return <div className="text-[11.5px] text-muted-light font-semibold uppercase tracking-wide mb-3">{children}</div>;
 }
 
 function SidebarMeta({ label, children }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 11.5, color: TI.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 5 }}>{label}</div>
+    <div className="mb-3.5">
+      <div className="text-[11.5px] text-muted-light font-semibold uppercase tracking-upper-wide mb-1.5">{label}</div>
       {children}
     </div>
   );
@@ -666,16 +607,16 @@ function SidebarMeta({ label, children }) {
 
 function Comment({ c }) {
   return (
-    <div style={{ position: "relative", paddingLeft: 28, paddingBottom: 16 }}>
-      <div style={{ position: "absolute", left: -3, top: 1, width: 28, height: 28, borderRadius: 28, background: "#fff", display: "grid", placeItems: "center" }}>
+    <div className="relative pl-7 pb-4">
+      <div className="absolute -left-0.5 top-0.5 w-7 h-7 rounded-full bg-white grid place-items-center">
         <AvI name={c.user.name} size={26}/>
       </div>
-      <div style={{ background: "#fafafa", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 10, padding: "10px 14px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: TI.text }}>{c.user.name}</span>
-          <span style={{ fontSize: 11.5, color: TI.mutedLight }}>{fmtDateI(c.created_at)}</span>
+      <div className="bg-bg-soft border border-black/5 rounded-2xl px-3.5 py-2.5">
+        <div className="flex justify-between items-baseline mb-1">
+          <span className="text-[13px] font-semibold text-text">{c.user.name}</span>
+          <span className="text-[11.5px] text-muted-light">{fmtDateI(c.created_at)}</span>
         </div>
-        <div style={{ fontSize: 13.5, color: TI.text, lineHeight: 1.5 }}>{c.body}</div>
+        <div className="text-[13.5px] text-text leading-normal">{c.body}</div>
       </div>
     </div>
   );
@@ -695,30 +636,26 @@ function AssignModal({ onClose, onAssign, current }) {
         setUsers([]);
       }
     };
-
     fetchUsers();
   }, []);
 
   const filtered = users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <MdI title="Assign issue" onClose={onClose} width={400} padding={false}>
-      <div style={{ padding: 12 }}>
+      <div className="p-3">
         <InI value={q} onChange={setQ} icon="search" placeholder="Search users…" autoFocus/>
       </div>
-      <div style={{ maxHeight: 360, overflowY: "auto", padding: "0 6px 12px" }}>
+      <div className="max-h-[360px] overflow-y-auto px-1.5 pb-3">
         <UnassignButton onClick={() => onAssign(null)} active={!current}/>
         {filtered.map(u => (
-          <button key={u.id} onClick={() => onAssign(u.id)} style={{
-            display: "flex", width: "100%", padding: "8px 10px", border: "none",
-            background: u.id === current ? "rgba(0,122,255,0.08)" : "transparent",
-            cursor: "pointer", alignItems: "center", gap: 10, borderRadius: 8, fontFamily: "inherit", textAlign: "left",
-          }}
-          onMouseEnter={(e) => { if (u.id !== current) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
-          onMouseLeave={(e) => { if (u.id !== current) e.currentTarget.style.background = "transparent"; }}>
+          <button key={u.id} onClick={() => onAssign(u.id)} className={cxI(
+            "flex w-full px-2.5 py-2 border-none cursor-pointer items-center gap-2.5 rounded-lg font-inherit text-left",
+            u.id === current ? "bg-accent/8" : "bg-transparent hover:bg-black/4"
+          )}>
             <AvI name={u.name} size={28}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, color: TI.text, fontWeight: 500 }}>{u.name}</div>
-              <div style={{ fontSize: 12, color: TI.mutedLight }}>{u.roles?.[0]?.name} {u.department && `· ${u.department}`}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] text-text font-medium">{u.name}</div>
+              <div className="text-[12px] text-muted-light">{u.roles?.[0]?.name} {u.department && `· ${u.department}`}</div>
             </div>
             {u.id === current && <II name="check" size={14} color={TI.accent}/>}
           </button>
@@ -730,15 +667,14 @@ function AssignModal({ onClose, onAssign, current }) {
 
 function UnassignButton({ onClick, active }) {
   return (
-    <button onClick={onClick} style={{
-      display: "flex", width: "100%", padding: "8px 10px", border: "none",
-      background: active ? "rgba(0,122,255,0.08)" : "transparent",
-      cursor: "pointer", alignItems: "center", gap: 10, borderRadius: 8, fontFamily: "inherit", textAlign: "left",
-    }}>
-      <div style={{ width: 28, height: 28, borderRadius: 28, background: "#f2f2f5", display: "grid", placeItems: "center" }}>
+    <button onClick={onClick} className={cxI(
+      "flex w-full px-2.5 py-2 border-none cursor-pointer items-center gap-2.5 rounded-lg font-inherit text-left",
+      active ? "bg-accent/8" : "bg-transparent hover:bg-black/4"
+    )}>
+      <div className="w-7 h-7 rounded-full bg-[#f2f2f5] grid place-items-center">
         <II name="x" size={13} color={TI.muted}/>
       </div>
-      <span style={{ fontSize: 13.5, color: TI.muted, flex: 1 }}>Unassigned</span>
+      <span className="text-[13.5px] text-muted flex-1">Unassigned</span>
     </button>
   );
 }
@@ -793,10 +729,9 @@ function IssueFormPage({ id }) {
         setLoading(false);
       });
     }
-  }, [id]);
+  }, [id, isEdit]);
 
   useEffect(() => {
-    // Load real data from API instead of mock data
     Promise.all([
       window.PulseAPI.Departments.list(),
       window.PulseAPI.IssueTypes.list(),
@@ -835,7 +770,7 @@ function IssueFormPage({ id }) {
     } finally { setSaving(false); }
   };
 
-  if (loading) return <div style={{ padding: 32 }}><SI height={300}/></div>;
+  if (loading) return <div className="p-8"><SI height={300}/></div>;
 
   return (
     <div>
@@ -853,8 +788,8 @@ function IssueFormPage({ id }) {
         }
       />
 
-      <div style={{ maxWidth: 880, padding: "0 28px 60px", display: "grid", gridTemplateColumns: "1fr 320px", gap: 32 }}>
-        <div style={{ minWidth: 0 }}>
+      <div className="max-w-[880px] px-7 pb-[60px] grid grid-cols-[1fr_320px] gap-8">
+        <div className="min-w-0">
           <SectionLabel>Issue</SectionLabel>
           <FI label="Title" required error={errors.title}>
             <InI value={form.title} onChange={v => set("title", v)} placeholder="e.g. AC not cooling in master bedroom" autoFocus/>
@@ -862,7 +797,7 @@ function IssueFormPage({ id }) {
           <FI label="Description" hint="What did the guest report? Times, severity, any context.">
             <TaI value={form.description} onChange={v => set("description", v)} rows={5} placeholder="Detailed description…"/>
           </FI>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
             <FI label="Departments" hint="Choose one or more">
               <MsI value={form.department_ids} onChange={v => set("department_ids", v)} options={departments.map(d => ({ value: d.id, label: d.name }))}/>
             </FI>
@@ -871,13 +806,13 @@ function IssueFormPage({ id }) {
             </FI>
           </div>
 
-          <SectionLabel style={{ marginTop: 20 }}>Guest details</SectionLabel>
-            <FI label="Guest name"><InI value={form.name} onChange={v => set("name", v)} icon="user" placeholder="Mr. / Ms. …"/></FI>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <SectionLabel className="mt-5">Guest details</SectionLabel>
+          <FI label="Guest name"><InI value={form.name} onChange={v => set("name", v)} icon="user" placeholder="Mr. / Ms. …"/></FI>
+          <div className="grid grid-cols-2 gap-3">
             <FI label="Room / Villa"><InI value={form.room_number} onChange={v => set("room_number", v)} placeholder="e.g. 805 or OV-12"/></FI>
             <FI label="Source"><InI value={form.source} onChange={v => set("source", v)} placeholder="Booking.com, Agoda, etc."/></FI>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+          <div className="grid grid-cols-[2fr_1fr] gap-3">
             <FI label="Check-in / Check-out">
               <window.DateRangePicker
                 checkinDate={form.checkin_date}
@@ -890,7 +825,7 @@ function IssueFormPage({ id }) {
             </FI>
             <FI label="Issue date" required><InI value={form.issue_date} onChange={v => set("issue_date", v)} type="date"/></FI>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
             <FI label="Nationality">
               <SsI
                 value={form.nationality}
@@ -921,15 +856,12 @@ function IssueFormPage({ id }) {
             </FI>
             <FI label="Contact"><InI value={form.contact} onChange={v => set("contact", v)} icon="phone" placeholder="phone or email"/></FI>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            
-          </div>
         </div>
 
         <aside>
           <SectionLabel>Routing</SectionLabel>
           <FI label="Priority" required error={errors.priority}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {[
                 { v: "urgent", desc: "VIP, safety, major failure" },
                 { v: "high",   desc: "Significant impact" },
@@ -939,17 +871,14 @@ function IssueFormPage({ id }) {
                 const meta = window.PulseUI.PRIORITY[o.v];
                 const sel = form.priority === o.v;
                 return (
-                  <button key={o.v} type="button" onClick={() => set("priority", o.v)} style={{
-                    display: "flex", alignItems: "center", gap: 10, textAlign: "left",
-                    padding: "9px 12px", border: "1px solid", fontFamily: "inherit",
-                    borderColor: sel ? meta.color : "rgba(0,0,0,0.08)",
-                    background: sel ? `${meta.color}10` : "#fff",
-                    borderRadius: 10, cursor: "pointer", transition: "all 100ms",
-                  }}>
-                    <div style={{ width: 8, height: 8, borderRadius: 8, background: meta.color, flexShrink: 0 }}/>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: sel ? meta.color : TI.text }}>{meta.label}</div>
-                      <div style={{ fontSize: 11.5, color: TI.mutedLight, marginTop: 1 }}>{o.desc}</div>
+                  <button key={o.v} type="button" onClick={() => set("priority", o.v)} className={cxI(
+                    "flex items-center gap-2.5 text-left px-3 py-2.5 border font-inherit rounded-xl cursor-pointer transition-all duration-100",
+                    sel ? "border-accent bg-accent/10" : "border-black/8 bg-white"
+                  )} style={{ borderColor: sel ? meta.color : undefined }}>
+                    <div className="w-2 h-2 rounded-full bg-(--priority-color) shrink-0" style={{ background: meta.color }}/>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold" style={{ color: sel ? meta.color : TI.text }}>{meta.label}</div>
+                      <div className="text-[11.5px] text-muted-light mt-0.5">{o.desc}</div>
                     </div>
                     {sel && <II name="check" size={13} color={meta.color}/>}
                   </button>
@@ -968,8 +897,8 @@ function IssueFormPage({ id }) {
   );
 }
 
-function SectionLabel({ children, style }) {
-  return <div style={{ fontSize: 11.5, color: TI.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, ...style }}>{children}</div>;
+function SectionLabel({ children, className }) {
+  return <div className={cxI("text-[11.5px] text-muted-light font-semibold uppercase tracking-wide mb-2.5", className)}>{children}</div>;
 }
 
 window.PageIssuesList = IssuesListPage;

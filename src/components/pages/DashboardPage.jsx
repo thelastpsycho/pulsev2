@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
 // ============================================================================
 // Dashboard page
+// All styling via Tailwind classes.
 // ============================================================================
+
+import React from 'react';
+
+const { useState, useEffect } = React;
 
 // Helper functions to safely access window.Pulse objects
 const getPulseUI = () => {
@@ -10,7 +14,7 @@ const getPulseUI = () => {
   }
   return { Icon: () => null, Avatar: () => null, Pill: () => null, PriorityPill: () => null,
            Button: () => null, Card: () => null, CardHeader: () => null, Skeleton: () => null, EmptyState: () => null,
-           TOKENS: {} };
+           TOKENS: {}, cx: (...xs) => xs.filter(Boolean).join(" ") };
 };
 
 const getPulseLayout = () => {
@@ -64,9 +68,9 @@ function DashboardPage({ user }) {
         sticky={false}
       />
 
-      <div style={{ padding: "0 28px 60px", maxWidth: 1400 }}>
+      <div className="px-7 pb-15 max-w-[1400px]">
         {/* KPI tiles */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 14 }}>
+        <div className="grid grid-cols-4 gap-3 mb-3.5">
           <KPI loading={loading} label="Open issues"     value={stats?.summary.open_issues}     icon="inbox"    accent={TD.accent}  delta="−12% vs last week" positive/>
           <KPI loading={loading} label="Urgent"          value={stats?.summary.urgent_issues}   icon="alert"    accent={TD.danger}  delta={stats?.summary.urgent_issues ? "Action needed" : "All clear"} positive={!stats?.summary.urgent_issues}/>
           <KPI loading={loading} label="Closed total"    value={stats?.summary.closed_issues}   icon="check-circle" accent={TD.success} delta="+18 this week" positive/>
@@ -74,19 +78,19 @@ function DashboardPage({ user }) {
         </div>
 
         {/* Trend + by-department */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div className="grid gap-3 mb-3.5 grid-cols-[1.55fr_1fr]">
           <CardD>
-            <CardHeaderD title="Issue intake — last 14 days" subtitle="Created vs closed" right={
+            <CardHeaderD title="Issue intake — last 14 days" subtitle="Created vs closed" action={
               <PillD color={TD.success}>↓ 12% vs prior period</PillD>
             }/>
-            <div style={{ padding: "18px 22px 22px" }}>
+            <div className="px-[22px] pt-[18px] pb-[22px]">
               {trends ? <TrendChart created={trends.created_trend} closed={trends.closed_trend}/> : <SkeletonD height={180}/>}
             </div>
           </CardD>
 
           <CardD>
             <CardHeaderD title="By department" subtitle={byDept ? `${byDept.summary.total_open_issues} open` : "—"}/>
-            <div style={{ padding: "16px 22px 18px" }}>
+            <div className="px-[22px] pt-[18px] pb-[18px]">
               {byDept?.departments.filter(d => d.total_issues > 0).slice(0, 6).map(d => (
                 <DeptBar key={d.id} d={d} max={Math.max(...byDept.departments.map(x => x.total_issues))}/>
               ))}
@@ -95,16 +99,16 @@ function DashboardPage({ user }) {
         </div>
 
         {/* Needs attention + activity */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="grid grid-cols-2 gap-3">
           <CardD>
             <CardHeaderD title="Needs your attention" subtitle="Urgent & high priority, still open" action={
-              <LinkD to="/issues?priority=urgent" style={{ fontSize: 13, color: TD.accent, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 2 }}>View all <IconD name="chevron-right" size={13}/></LinkD>
+              <LinkD to="/issues?priority=urgent" className="text-[13px] text-accent font-medium inline-flex items-center gap-0.5">View all <IconD name="chevron-right" size={13}/></LinkD>
             }/>
-            {loading ? <div style={{ padding: 20 }}><SkeletonD height={56}/></div> : <CriticalList stats={stats}/>}
+            {loading ? <div className="p-5"><SkeletonD height={56}/></div> : <CriticalList stats={stats}/>}
           </CardD>
           <CardD>
             <CardHeaderD title="Recent activity"/>
-            {loading ? <div style={{ padding: 20 }}><SkeletonD height={56}/></div> : <ActivityList/>}
+            {loading ? <div className="p-5"><SkeletonD height={56}/></div> : <ActivityList/>}
           </CardD>
         </div>
       </div>
@@ -122,15 +126,15 @@ function formatHours(h) {
 function KPI({ label, value, icon, accent, delta, positive, loading }) {
   return (
     <CardD>
-      <div style={{ padding: "16px 18px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, color: TD.muted, fontSize: 12.5, fontWeight: 500 }}>
+      <div className="px-[18px] py-4">
+        <div className="flex items-center gap-1.5 text-muted text-[12.5px] font-medium">
           <IconD name={icon} size={14} color={accent || TD.mutedLight}/>
           {label}
         </div>
-        <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.03em", marginTop: 6, color: accent || TD.text, fontVariantNumeric: "tabular-nums", minHeight: 38 }}>
+        <div className="text-3xl font-semibold tracking-tight mt-1.5 tabular-nums min-h-9" style={{ color: accent || TD.text }}>
           {loading ? <SkeletonD width={64} height={30}/> : value}
         </div>
-        <div style={{ fontSize: 12, marginTop: 2, color: positive ? TD.success : TD.warning, display: "flex", alignItems: "center", gap: 3 }}>
+        <div className="text-xs mt-0.5 flex items-center gap-0.5" style={{ color: positive ? TD.success : TD.warning }}>
           {!loading && (
             <>
               <IconD name={positive ? "arrow-down" : "arrow-up"} size={11} strokeWidth={2.2}/>
@@ -148,20 +152,26 @@ function DeptBar({ d, max }) {
   const openPct = (d.open_issues / total) * 100;
   const closedPct = (d.closed_issues / total) * 100;
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 5, alignItems: "center" }}>
-        <span style={{ color: TD.text, fontWeight: 500 }}>{d.name}</span>
-        <span style={{ color: TD.mutedLight, fontVariantNumeric: "tabular-nums" }}>{d.open_issues} open · {d.total_issues} total</span>
+    <div className="mb-2.5">
+      <div className="flex justify-between items-center text-[12.5px] mb-1">
+        <span className="text-text font-medium">{d.name}</span>
+        <span className="text-muted-light tabular-nums">{d.open_issues} open · {d.total_issues} total</span>
       </div>
-      <div style={{ height: 6, background: "rgba(0,0,0,0.05)", borderRadius: 6, overflow: "hidden", display: "flex" }}>
-        <div style={{ width: `${openPct}%`, height: "100%", background: TD.accent, transition: "width 400ms ease" }}/>
-        <div style={{ width: `${closedPct}%`, height: "100%", background: TD.success, opacity: 0.4, transition: "width 400ms ease" }}/>
+      <div className="h-1.5 bg-black/5 rounded-md overflow-hidden flex">
+        <div
+          className="h-full bg-accent transition-all duration-400 ease-out"
+          style={{ width: `${openPct}%` }}
+        />
+        <div
+          className="h-full bg-success opacity-40 transition-all duration-400 ease-out"
+          style={{ width: `${closedPct}%` }}
+        />
       </div>
     </div>
   );
 }
 
-function CriticalList({ stats }) {
+function CriticalList() {
   const [issues, setIssues] = useState([]);
 
   useEffect(() => {
@@ -173,8 +183,6 @@ function CriticalList({ stats }) {
           per_page: 4
         });
 
-        // If we need both urgent and high, we might need to make two calls
-        // or the API should support filtering by multiple priorities
         const highPriorityResponse = await window.PulseAPI.Issues.list({
           status: 'open',
           priority: 'high',
@@ -182,7 +190,12 @@ function CriticalList({ stats }) {
         });
 
         const combinedIssues = [...response.data, ...highPriorityResponse.data]
-          .sort((a, b) => (a.priority === 'urgent' ? -1 : 1))
+          .sort((a, b) => {
+            // Sort by priority (urgent first), then by id (newest first)
+            if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+            if (a.priority !== 'urgent' && b.priority === 'urgent') return 1;
+            return b.id - a.id;
+          })
           .slice(0, 4);
 
         setIssues(combinedIssues);
@@ -199,22 +212,16 @@ function CriticalList({ stats }) {
     <div>
       {issues.map(i => (
         <LinkD key={i.id} to={`/issues/${i.id}`}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 12, padding: "12px 22px",
-            borderTop: "1px solid rgba(0,0,0,0.04)", cursor: "pointer", transition: "background 100ms",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.02)"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          >
+          <div className="flex items-center gap-3 px-[22px] py-3 border-t border-black/4 cursor-pointer transition-colors duration-100 hover:bg-black/2">
             <AvatarD name={i.name} size={32}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{i.title}</div>
-              <div style={{ fontSize: 12, color: TD.mutedLight, marginTop: 1 }}>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold truncate">{i.title}</div>
+              <div className="text-[12px] text-muted-light mt-0.5">
                 {i.location} · #{i.id}
                 {i.issueTypes && i.issueTypes.length > 0 && (
-                  <span style={{ marginLeft: 6 }}>
-                    · <span style={{ color: TD.purple }}>{i.issueTypes[0].name}</span>
-                    {i.issueTypes.length > 1 && <span style={{ color: TD.muted }}> +{i.issueTypes.length - 1}</span>}
+                  <span className="ml-1.5">
+                    · <span className="text-purple">{i.issueTypes[0].name}</span>
+                    {i.issueTypes.length > 1 && <span className="text-muted"> +{i.issueTypes.length - 1}</span>}
                   </span>
                 )}
               </div>
@@ -231,9 +238,6 @@ function ActivityList() {
   const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [available, setAvailable] = useState(true);
-  const meta = {
-    issue: { icon: "edit", color: TD.muted },
-  };
 
   useEffect(() => {
     const fetchActivity = async () => {
@@ -241,7 +245,6 @@ function ActivityList() {
         const response = await window.PulseAPI.Activity.list({ per_page: 5 });
         setLog(response.data || []);
       } catch (error) {
-        // Endpoint not available - hide this section
         if (error.status === 404) {
           setAvailable(false);
         } else {
@@ -256,22 +259,16 @@ function ActivityList() {
   }, []);
 
   if (!available) return <EmptyD icon="clock" title="Activity log coming soon" description="This feature will be available in the next update." />;
-  if (loading) return <div style={{ padding: 20, textAlign: "center", color: TD.muted }}>Loading activity...</div>;
+  if (loading) return <div className="p-5 text-center text-muted">Loading activity...</div>;
   return (
     <div>
       {log.map(a => (
         <LinkD key={a.id} to={`/issues/${a.subject_id}`}>
-          <div style={{
-            display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 22px",
-            borderTop: "1px solid rgba(0,0,0,0.04)", cursor: "pointer", transition: "background 100ms",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.02)"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          >
+          <div className="flex items-start gap-2.5 px-[22px] py-2.5 border-t border-black/4 cursor-pointer transition-colors duration-100 hover:bg-black/2">
             <AvatarD name={a.actor.name} size={26}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, color: TD.text, lineHeight: 1.45 }}>{a.description}</div>
-              <div style={{ fontSize: 11, color: TD.mutedLight, marginTop: 2 }}>{timeAgoShort(a.created_at)}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12.5px] text-text leading-relaxed">{a.description}</div>
+              <div className="text-[11px] text-muted-light mt-0.5">{timeAgoShort(a.created_at)}</div>
             </div>
           </div>
         </LinkD>
@@ -298,11 +295,11 @@ function TrendChart({ created, closed }) {
   const buildArea = (arr) => `${buildPath(arr)} L${padL + (arr.length-1)*stepX},${h - padB} L${padL},${h - padB} Z`;
   return (
     <div>
-      <div style={{ display: "flex", gap: 14, fontSize: 12, color: TD.muted, marginBottom: 6 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 8, height: 8, background: TD.accent, borderRadius: 2 }}/>Created</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 8, height: 8, background: TD.success, borderRadius: 2 }}/>Closed</span>
+      <div className="flex gap-3.5 text-xs text-muted mb-1.5">
+        <span className="inline-flex items-center gap-1"><span className="w-2 h-2 bg-accent rounded-sm"/>Created</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2 h-2 bg-success rounded-sm"/>Closed</span>
       </div>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", display: "block" }}>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full block">
         <defs>
           <linearGradient id="gp-d-c" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={TD.accent} stopOpacity="0.16"/><stop offset="100%" stopColor={TD.accent} stopOpacity="0"/></linearGradient>
           <linearGradient id="gp-d-x" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={TD.success} stopOpacity="0.12"/><stop offset="100%" stopColor={TD.success} stopOpacity="0"/></linearGradient>

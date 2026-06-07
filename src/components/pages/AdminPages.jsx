@@ -57,43 +57,43 @@ function AdminUsersPage() {
     <div>
       <PhA title="Users" subtitle={users ? `${users.length} total · ${users.filter(u => u.is_active).length} active` : "—"}
         actions={<BA icon="plus" onClick={() => setEditing("new")}>New user</BA>}/>
-      <div style={{ padding: "0 28px 60px", maxWidth: 1200 }}>
-        <div style={{ padding: "16px 0 12px", display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ flex: "0 0 320px" }}><InA value={q} onChange={setQ} icon="search" placeholder="Search users…"/></div>
+      <div className="px-7 pb-[60px] max-w-[1200px]">
+        <div className="pt-4 pb-3 flex gap-2 items-center">
+          <div className="flex-[0_0_320px]"><InA value={q} onChange={setQ} icon="search" placeholder="Search users…"/></div>
         </div>
         <CA>
-          {!users ? <div style={{ padding: 20 }}><SA height={48}/></div> : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+          {!users ? <div className="p-5"><SA height={48}/></div> : (
+            <table className="w-full border-collapse text-[13.5px]">
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                  <th style={thA}>User</th>
-                  <th style={thA}>Role</th>
-                  <th style={thA}>Department</th>
-                  <th style={thA}>Last seen</th>
-                  <th style={{ ...thA, textAlign: "right", paddingRight: 22 }}>Status</th>
-                  <th style={{ ...thA, width: 50 }}></th>
+                <tr className="border-b border-black/6">
+                  <th className={thAClass}>User</th>
+                  <th className={thAClass}>Role</th>
+                  <th className={thAClass}>Department</th>
+                  <th className={thAClass}>Last seen</th>
+                  <th className={`${thAClass} text-right pr-5.5`}>Status</th>
+                  <th className={`${thAClass} w-[50px]`}></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered?.map(u => (
-                  <tr key={u.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-                    <td style={{ ...tdA, paddingLeft: 22 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <tr key={u.id} className="border-b border-black/4">
+                    <td className={`${tdAClass} pl-5.5`}>
+                      <div className="flex items-center gap-2.5">
                         <AvA name={u.name} size={32}/>
                         <div>
-                          <div style={{ fontWeight: 500, color: TA.text }}>{u.name}</div>
-                          <div style={{ fontSize: 12, color: TA.mutedLight }}>{u.email}</div>
+                          <div className="font-medium text-text">{u.name}</div>
+                          <div className="text-[12px] text-muted-light">{u.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td style={tdA}><PA color={TA.purple}>{u.roles && u.roles.length > 0 ? u.roles[0].name : "—"}</PA></td>
-                    <td style={{ ...tdA, color: TA.muted }}>{u.department || "—"}</td>
-                    <td style={{ ...tdA, color: TA.mutedLight, fontSize: 12.5 }}>{u.last_login_at ? timeAgoA(u.last_login_at) : "Never"}</td>
-                    <td style={{ ...tdA, textAlign: "right", paddingRight: 22 }}>
+                    <td className={tdAClass}><PA color={TA.purple}>{u.roles && u.roles.length > 0 ? u.roles[0].name : "—"}</PA></td>
+                    <td className={`${tdAClass} text-muted`}>{u.department || "—"}</td>
+                    <td className={`${tdAClass} text-muted-light text-[12.5px]`}>{u.last_login_at ? timeAgoA(u.last_login_at) : "Never"}</td>
+                    <td className={`${tdAClass} text-right pr-5.5`}>
                       {u.is_active ? <PA color={TA.success} dot>Active</PA> : <PA color={TA.mutedLight}>Inactive</PA>}
                     </td>
-                    <td style={tdA}>
-                      <DdA trigger={<button style={{ background: "none", border: "none", padding: 4, cursor: "pointer" }}><IA name="more" size={15} color={TA.mutedLight}/></button>}>
+                    <td className={tdAClass}>
+                      <DdA trigger={<button className="bg-none border-none p-1 cursor-pointer"><IA name="more" size={15} color={TA.mutedLight}/></button>}>
                         <DiA icon="edit" label="Edit" onClick={() => setEditing(u)}/>
                         <DiA icon="key" label="Change password"/>
                         <DiA icon={u.is_active ? "x-circle" : "check-circle"} label={u.is_active ? "Deactivate" : "Activate"} onClick={() => toggleActive(u)}/>
@@ -214,43 +214,43 @@ function AdminRolesPage() {
     <div>
       <PhA title="Roles" subtitle="Permission groups for user accounts"
         actions={<BA icon="plus" onClick={() => setEditing("new")}>New role</BA>}/>
-      <div style={{ padding: "16px 28px 60px", maxWidth: 1100 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+      <div className="px-7 pb-[60px] pt-4 max-w-[1100px]">
+        <div className="grid grid-cols-2 gap-3">
           {roles?.map(r => (
             <CA key={r.id}>
-              <div style={{ padding: 18 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(142,92,242,0.10)", color: TA.purple, display: "grid", placeItems: "center" }}>
+              <div className="p-4.5">
+                <div className="flex items-start justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-purple/10 text-purple grid place-items-center">
                       <IA name="shield" size={16}/>
                     </div>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{r.name}</div>
-                      <div style={{ fontSize: 12.5, color: TA.mutedLight, marginTop: 1 }}>{r.users_count} users</div>
+                      <div className="text-[15px] font-semibold tracking-tight">{r.name}</div>
+                      <div className="text-[12.5px] text-muted-light mt-0.5">{r.users_count} users</div>
                     </div>
                   </div>
-                  <DdA trigger={<button style={{ background: "none", border: "none", padding: 4, cursor: "pointer" }}><IA name="more" size={15} color={TA.mutedLight}/></button>}>
+                  <DdA trigger={<button className="bg-none border-none p-1 cursor-pointer"><IA name="more" size={15} color={TA.mutedLight}/></button>}>
                     <DiA icon="edit" label="Edit permissions" onClick={() => setEditing(r)}/>
                     <DiA icon="users" label="View members"/>
                     <DdvA/>
                     <DiA icon="trash" label="Delete" danger/>
                   </DdA>
                 </div>
-                <div style={{ fontSize: 13, color: TA.muted, marginBottom: 14, minHeight: 36 }}>{r.description}</div>
+                <div className="text-[13px] text-muted mb-3.5 min-h-9">{r.description}</div>
                 {r.permissions && r.permissions.length > 0 && (
                   <>
-                    <div style={{ fontSize: 11.5, color: TA.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{r.permissions.length} permissions</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    <div className="text-[11.5px] text-muted-light font-semibold uppercase tracking-wider mb-1.5">{r.permissions.length} permissions</div>
+                    <div className="flex flex-wrap gap-1">
                       {r.permissions.slice(0, 6).map(pid => {
                         const p = permissions.find(x => x.id === pid);
-                        return p && <PA key={pid} color={TA.muted} style={{ fontSize: 10.5 }}>{p.name}</PA>;
+                        return p && <PA key={pid} color={TA.muted} className="text-[10.5px]">{p.name}</PA>;
                       })}
-                      {r.permissions.length > 6 && <PA color={TA.mutedLight} style={{ fontSize: 10.5 }}>+{r.permissions.length - 6} more</PA>}
+                      {r.permissions.length > 6 && <PA color={TA.mutedLight} className="text-[10.5px]">+{r.permissions.length - 6} more</PA>}
                     </div>
                   </>
                 )}
                 {(!r.permissions || r.permissions.length === 0) && (
-                  <div style={{ fontSize: 11.5, color: TA.mutedLight, fontStyle: "italic" }}>No permissions assigned</div>
+                  <div className="text-[11.5px] text-muted-light italic">No permissions assigned</div>
                 )}
               </div>
             </CA>
@@ -296,20 +296,20 @@ function RoleFormDrawer({ role, onClose, onSave }) {
     }>
       <FA label="Name" required><InA value={form.name} onChange={v => set("name", v)} autoFocus/></FA>
       <FA label="Description"><TaA value={form.description} onChange={v => set("description", v)} rows={2}/></FA>
-      <div style={{ fontSize: 12.5, color: TA.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 18, marginBottom: 10 }}>Permissions</div>
+      <div className="text-[12.5px] text-muted-light font-semibold uppercase tracking-[0.04em] mt-4.5 mb-2.5">Permissions</div>
       {Object.entries(groups).map(([g, perms]) => (
-        <div key={g} style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: TA.text, textTransform: "capitalize" }}>{g}</div>
+        <div key={g} className="mb-3.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="text-[12.5px] font-semibold text-text capitalize">{g}</div>
             <button onClick={() => {
               const allOn = perms.every(p => form.permissions.includes(p.id));
               if (allOn) set("permissions", form.permissions.filter(id => !perms.find(p => p.id === id)));
               else set("permissions", [...new Set([...form.permissions, ...perms.map(p => p.id)])]);
-            }} style={{ background: "none", border: "none", color: TA.accent, fontSize: 12, cursor: "pointer", fontWeight: 500 }}>
+            }} className="bg-none border-none text-accent text-[12px] cursor-pointer font-medium">
               Toggle all
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          <div className="grid grid-cols-2 gap-1.5">
             {perms.map(p => (
               <CbA key={p.id} checked={form.permissions.includes(p.id)} onChange={() => togglePerm(p.id)} label={p.name.split(".").slice(1).join(".")}/>
             ))}
@@ -336,21 +336,21 @@ function AdminDepartmentsPage() {
     <div>
       <PhA title="Departments" subtitle="Organizational units for issue routing"
         actions={<BA icon="plus" onClick={() => setEditing("new")}>New department</BA>}/>
-      <div style={{ padding: "16px 28px 60px", maxWidth: 1000 }}>
+      <div className="px-7 pb-[60px] pt-4 max-w-[1000px]">
         <CA>
-          {!depts ? <div style={{ padding: 20 }}><SA height={48}/></div> : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
-              <thead><tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                <th style={thA}>Department</th>
-                <th style={thA}>Code</th>
-                <th style={{ ...thA, textAlign: "right" }}>Open</th>
-                <th style={{ ...thA, textAlign: "right" }}>Closed</th>
-                <th style={{ ...thA, textAlign: "right", paddingRight: 22 }}>Status</th>
-                <th style={{ ...thA, width: 50 }}></th>
+          {!depts ? <div className="p-5"><SA height={48}/></div> : (
+            <table className="w-full border-collapse text-[13.5px]">
+              <thead><tr className="border-b border-black/6">
+                <th className={thAClass}>Department</th>
+                <th className={thAClass}>Code</th>
+                <th className={`${thAClass} text-right`}>Open</th>
+                <th className={`${thAClass} text-right`}>Closed</th>
+                <th className={`${thAClass} text-right pr-5.5`}>Status</th>
+                <th className={`${thAClass} w-[50px]`}></th>
               </tr></thead>
               <tbody>
                 {depts.map(d => (
-                  <tr key={d.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
+                  <tr key={d.id} className="border-b border-black/4">
                     <td style={{ ...tdA, paddingLeft: 22, fontWeight: 500 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(0,0,0,0.04)", display: "grid", placeItems: "center" }}><IA name="building" size={14} color={TA.muted}/></div>
@@ -453,23 +453,9 @@ function AdminIssueTypesPage() {
 
 function TypeDrawer({ type, onClose, onSave }) {
   const isNew = !type;
-  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(type ? { ...type, issue_category_id: type.issue_category?.id } : { name: "", description: "", issue_category_id: 1, default_severity: "medium", is_active: true });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await window.PulseAPI.Categories.list();
-        setCategories(response.data.map(c => ({ value: c.id, label: c.name })) || []);
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-        setCategories([]);
-      }
-    };
-
-    fetchCategories();
-  }, []);
   return (
     <DrA open={true} onClose={onClose} title={isNew ? "New issue type" : `Edit ${type.name}`} width={400} footer={
       <><BA variant="ghost" onClick={onClose}>Cancel</BA><BA icon="check" onClick={() => onSave(form)}>{isNew ? "Create" : "Save"}</BA></>
@@ -605,8 +591,11 @@ function timeAgoA(iso) {
   return `${Math.round(s/86400)}d ago`;
 }
 
-const thA = { padding: "10px 8px", textAlign: "left", fontSize: 11.5, fontWeight: 600, color: TA.mutedLight, textTransform: "uppercase", letterSpacing: "0.04em", paddingLeft: 22 };
 const tdA = { padding: "12px 8px", color: TA.text };
+
+// Tailwind class equivalents for table styles
+const thAClass = "px-2 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5";
+const tdAClass = "px-2 py-3 text-text";
 
 window.PageAdminUsers = AdminUsersPage;
 window.PageAdminRoles = AdminRolesPage;

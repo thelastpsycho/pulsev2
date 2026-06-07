@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 // ============================================================================
 // Date Range Picker Component
 // ============================================================================
@@ -10,8 +10,10 @@ function DateRangePicker({ checkinDate, checkoutDate, onChange, disabled }) {
   const [focusedCheckout, setFocusedCheckout] = useState(false);
 
   useEffect(() => {
-    setCheckin(checkinDate || "");
-    setCheckout(checkoutDate || "");
+    Promise.resolve().then(() => {
+      setCheckin(checkinDate || "");
+      setCheckout(checkoutDate || "");
+    });
   }, [checkinDate, checkoutDate]);
 
   const handleCheckinChange = (value) => {
@@ -27,26 +29,17 @@ function DateRangePicker({ checkinDate, checkoutDate, onChange, disabled }) {
     onChange({ checkin_date: checkin, checkout_date: value });
   };
 
-  const inputStyle = {
-    width: "100%",
-    padding: "9px 12px",
-    border: "1px solid rgba(0,0,0,0.10)",
-    borderRadius: 9,
-    fontSize: 14,
-    fontFamily: "inherit",
-    transition: "border-color 100ms, box-shadow 100ms",
-    opacity: disabled ? 0.6 : 1,
-    cursor: disabled ? "not-allowed" : "pointer",
-  };
-
-  const focusedStyle = {
-    borderColor: "#007aff",
-    boxShadow: "0 0 0 3px rgba(0,122,255,0.15)",
-  };
+  const getInputClasses = (focused) => `
+    w-full px-3 py-2 border border-black/10 rounded-lg
+    text-[14px] font-inherit
+    transition-all duration-100
+    ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+    ${focused ? 'border-accent ring-4 ring-accent/15' : ''}
+  `.trim().replace(/\s+/g, ' ');
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ flex: 1 }}>
+    <div className="flex items-center gap-2">
+      <div className="flex-1">
         <input
           type="date"
           value={checkin}
@@ -54,14 +47,11 @@ function DateRangePicker({ checkinDate, checkoutDate, onChange, disabled }) {
           onFocus={() => setFocusedCheckin(true)}
           onBlur={() => setFocusedCheckin(false)}
           disabled={disabled}
-          style={{
-            ...inputStyle,
-            ...(focusedCheckin ? focusedStyle : {}),
-          }}
+          className={getInputClasses(focusedCheckin)}
         />
       </div>
-      <span style={{ color: "rgba(0,0,0,0.3)", fontSize: 14, fontWeight: "500"}}>→</span>
-      <div style={{ flex: 1 }}>
+      <span className="text-black/30 text-[14px] font-medium">→</span>
+      <div className="flex-1">
         <input
           type="date"
           value={checkout}
@@ -70,10 +60,7 @@ function DateRangePicker({ checkinDate, checkoutDate, onChange, disabled }) {
           onBlur={() => setFocusedCheckout(false)}
           disabled={disabled}
           min={checkin}
-          style={{
-            ...inputStyle,
-            ...(focusedCheckout ? focusedStyle : {}),
-          }}
+          className={getInputClasses(focusedCheckout)}
         />
       </div>
     </div>

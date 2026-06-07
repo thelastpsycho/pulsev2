@@ -1,8 +1,91 @@
-/* Reset and Base Styles */
-* {
+@import "tailwindcss";
+
+/* Custom design tokens for GuestPulse - Claude Design */
+@theme {
+  /* Custom colors */
+  --color-accent: #007aff;
+  --color-accent-hover: #0a6fe0;
+  --color-text: #1d1d1f;
+  --color-text-secondary: #3a3a3c;
+  --color-muted: #6e6e73;
+  --color-muted-light: #86868b;
+  --color-border: rgba(0,0,0,0.08);
+  --color-border-strong: rgba(0,0,0,0.12);
+  --color-surface: #ffffff;
+  --color-bg: #f5f5f7;
+  --color-bg-soft: #fafafa;
+  --color-success: #34c759;
+  --color-success-hover: #2db84e;
+  --color-warning: #ff9500;
+  --color-danger: #ff3b30;
+  --color-danger-hover: #e0322a;
+  --color-urgent: #ff3b30;
+  --color-high: #ff9500;
+  --color-medium: #ffb800;
+  --color-low: #34c759;
+  --color-purple: #8e5cf2;
+  --color-gold: #b8860b;
+
+  /* Letter spacing */
+  --spacing-body: -0.005em;
+  --spacing-tightish: -0.01em;
+  --spacing-tighter2: -0.015em;
+  --spacing-tighter3: -0.02em;
+  --spacing-tighter4: -0.025em;
+  --spacing-upper-wide: 0.04em;
+  --spacing-upper-wider: 0.06em;
+
+  /* Box shadows */
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-card-hover: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-kbd: 0 1px 0 rgba(0,0,0,0.04);
+  --shadow-popover: 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.18);
+
+  /* Custom animations */
+  --animate-gp-shimmer: gp-shimmer 1.4s linear infinite;
+  --animate-gp-spin: gp-spin 0.8s linear infinite;
+  --animate-gp-fade: gp-fade 0.2s ease-out;
+  --animate-gp-scale: gp-scale 0.18s ease-out;
+  --animate-gp-slide-in: gp-slide-in 0.22s ease-out;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  @keyframes gp-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  @keyframes gp-spin {
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes gp-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes gp-scale {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes gp-slide-in {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Font family */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Base styles */
+*, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html, body {
@@ -10,33 +93,21 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   color: #1d1d1f;
   background: #fff;
   letter-spacing: -0.005em;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-p {
-  line-height: 1.6;
-}
-
-/* Buttons and Inputs */
+/* Form elements */
 button, input, textarea, select {
   font-family: inherit;
-  font-size: inherit;
 }
 
 /* Links */
@@ -45,11 +116,7 @@ a {
   text-decoration: none;
 }
 
-a:hover {
-  text-decoration: underline;
-}
-
-/* Scrollbars */
+/* Scrollbars - keep custom styling */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -70,81 +137,4 @@ a:hover {
   background: rgba(0, 0, 0, 0.26);
   background-clip: content-box;
   border: 3px solid transparent;
-}
-
-/* Animations */
-@keyframes gp-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@keyframes gp-spin {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes gp-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes gp-scale {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes gp-slide-in {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Table Row Hover Effect */
-.issue-row {
-  transition: background-color 150ms ease;
-}
-
-.issue-row:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-/* Utility Classes */
-.text-muted {
-  color: #6e6e73;
-}
-
-.text-primary {
-  color: #007aff;
-}
-
-.text-success {
-  color: #34c759;
-}
-
-.text-danger {
-  color: #ff3b30;
-}
-
-.text-warning {
-  color: #ff9500;
 }

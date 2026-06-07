@@ -1,52 +1,67 @@
-import React, { useState, useEffect, useRef } from 'react'
 // ============================================================================
 // Overlay primitives — Modal, Drawer, Dropdown, Toast, Confirm
+// All styling via Tailwind classes.
 // ============================================================================
+
+import React from 'react';
+
+const { useState, useEffect, useRef } = React;
 
 // Helper to safely access window.PulseUI
 const getPulseUI = () => {
   if (typeof window !== 'undefined' && window.PulseUI) {
     return window.PulseUI;
   }
-  return { Icon: () => null, IconButton: () => null, TOKENS: {}, Button: () => null };
+  return { Icon: () => null, IconButton: () => null, TOKENS: { success: '#34c759', danger: '#ff3b30', accent: '#007aff' }, Button: () => null, cx: (...xs) => xs.filter(Boolean).join(" ") };
 };
 
 const IconO = getPulseUI().Icon;
 const IconBtnO = getPulseUI().IconButton;
 const TO = getPulseUI().TOKENS;
 const ButtonO = getPulseUI().Button;
+const cxO = getPulseUI().cx || ((...xs) => xs.filter(Boolean).join(" "));
 
 // ---- Modal -----------------------------------------------------------------
-function Modal({ children, onClose, title, width = 480, footer, padding = true }) {
+function Modal({ children, onClose, title, width = 480, footer, padding = true, className }) {
   useEffect(() => {
     const h = (e) => { if (e.key === "Escape") onClose?.(); };
     document.addEventListener("keydown", h);
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", h); document.body.style.overflow = ""; };
   }, [onClose]);
+
   return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, zIndex: 200, display: "grid", placeItems: "center",
-      background: "rgba(0,0,0,0.32)", backdropFilter: "blur(6px)", padding: 20,
-      animation: "gp-fade 160ms ease",
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width, maxWidth: "100%", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column",
-        background: "#fff", borderRadius: 16,
-        boxShadow: "0 30px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05)",
-        animation: "gp-scale 200ms cubic-bezier(.2,.7,.2,1)",
-      }}>
+    <div
+      onClick={onClose}
+      className={cxO(
+        "fixed inset-0 z-[200] grid place-items-center p-5",
+        "bg-black/32 backdrop-blur-sm",
+        "animate-gp-fade",
+        className,
+      )}
+      style={{ animationDuration: "160ms" }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="bg-white rounded-2xl flex flex-col overflow-hidden max-h-[90vh] w-full"
+        style={{
+          width,
+          maxWidth: "100%",
+          boxShadow: "0 30px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05)",
+          animation: "gp-scale 200ms cubic-bezier(.2,.7,.2,1)",
+        }}
+      >
         {title && (
-          <div style={{ padding: "16px 22px 14px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.01em" }}>{title}</div>
+          <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/[.06]">
+            <div className="text-base font-semibold tracking-tighter">{title}</div>
             <IconBtnO icon="x" onClick={onClose} size={28}/>
           </div>
         )}
-        <div style={{ padding: padding ? "18px 22px" : 0, overflowY: "auto", flex: 1 }}>
+        <div className={cxO("overflow-y-auto flex-1", padding && "px-[22px] py-[18px]")}>
           {children}
         </div>
         {footer && (
-          <div style={{ padding: "12px 22px", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "flex-end", gap: 8, background: "rgba(0,0,0,0.015)" }}>
+          <div className="flex items-center justify-end gap-2 px-[22px] py-3 border-t border-black/[.06] bg-black/[.015]">
             {footer}
           </div>
         )}
@@ -56,7 +71,7 @@ function Modal({ children, onClose, title, width = 480, footer, padding = true }
 }
 
 // ---- Drawer (slides from right) -------------------------------------------
-function Drawer({ children, onClose, title, width = 480, open, footer }) {
+function Drawer({ children, onClose, title, width = 480, open, footer, className }) {
   useEffect(() => {
     if (open) {
       const h = (e) => { if (e.key === "Escape") onClose?.(); };
@@ -64,26 +79,34 @@ function Drawer({ children, onClose, title, width = 480, open, footer }) {
       return () => document.removeEventListener("keydown", h);
     }
   }, [open, onClose]);
+
   return (
     <>
-      {open && <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 150, background: "rgba(0,0,0,0.32)", backdropFilter: "blur(4px)", animation: "gp-fade 200ms ease" }}/>}
-      <div style={{
-        position: "fixed", top: 0, right: 0, bottom: 0, width, maxWidth: "92vw", zIndex: 160,
-        background: "#fff",
-        boxShadow: "-20px 0 50px rgba(0,0,0,0.15)",
-        transform: open ? "translateX(0)" : "translateX(110%)",
-        transition: "transform 280ms cubic-bezier(.2,.7,.2,1)",
-        display: "flex", flexDirection: "column",
-      }}>
+      {open && <div onClick={onClose} className="fixed inset-0 z-[150] bg-black/32 backdrop-blur-sm animate-gp-fade" style={{ animationDuration: "200ms" }}/>}
+      <div
+        className={cxO(
+          "fixed top-0 right-0 bottom-0 z-[160] bg-white flex flex-col",
+          className,
+        )}
+        style={{
+          width,
+          maxWidth: "92vw",
+          transform: open ? "translateX(0)" : "translateX(110%)",
+          transition: "transform 280ms cubic-bezier(.2,.7,.2,1)",
+          boxShadow: "-20px 0 50px rgba(0,0,0,0.15)",
+        }}
+      >
         {title && (
-          <div style={{ padding: "16px 22px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.01em" }}>{title}</div>
+          <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/[.06]">
+            <div className="text-base font-semibold tracking-tighter">{title}</div>
             <IconBtnO icon="x" onClick={onClose} size={28}/>
           </div>
         )}
-        <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px" }}>{children}</div>
+        <div className="flex-1 overflow-y-auto px-[22px] py-[18px]">{children}</div>
         {footer && (
-          <div style={{ padding: "12px 22px", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "flex-end", gap: 8 }}>{footer}</div>
+          <div className="flex items-center justify-end gap-2 px-[22px] py-3 border-t border-black/[.06]">
+            {footer}
+          </div>
         )}
       </div>
     </>
@@ -91,7 +114,7 @@ function Drawer({ children, onClose, title, width = 480, open, footer }) {
 }
 
 // ---- Dropdown menu ---------------------------------------------------------
-function Dropdown({ trigger, children, align = "right", width = 200 }) {
+function Dropdown({ trigger, children, align = "right", width = 200, className }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -99,17 +122,26 @@ function Dropdown({ trigger, children, align = "right", width = 200 }) {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
+
+  const alignClass = align === "right" ? "right-0" : "left-0";
+
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <div ref={ref} className={cxO("relative inline-block", className)}>
       <div onClick={() => setOpen(o => !o)}>{trigger}</div>
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", [align]: 0, zIndex: 60, width,
-          background: "rgba(255,255,255,0.98)", backdropFilter: "blur(16px)",
-          borderRadius: 10, padding: 4,
-          boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
-          animation: "gp-scale 140ms ease",
-        }}>
+        <div
+          className={cxO(
+            "absolute z-[60] p-1 rounded-xl",
+            "bg-white/98 backdrop-blur-md border border-black/[.06]",
+            alignClass,
+          )}
+          style={{
+            top: "calc(100% + 4px)",
+            width,
+            boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
+            animation: "gp-scale 140ms cubic-bezier(.2,.7,.2,1)",
+          }}
+        >
           {typeof children === "function" ? children({ close: () => setOpen(false) }) : React.Children.map(children, c => c && React.cloneElement(c, { onSelect: () => setOpen(false) }))}
         </div>
       )}
@@ -117,32 +149,44 @@ function Dropdown({ trigger, children, align = "right", width = 200 }) {
   );
 }
 
-function DropdownItem({ icon, label, onClick, onSelect, danger, active, shortcut }) {
+function DropdownItem({ icon, label, onClick, onSelect, danger, active, shortcut, className }) {
   const [h, setH] = useState(false);
+
+  const getColorClass = () => {
+    if (danger) return "text-danger";
+    if (h) return "text-accent";
+    return "text-text";
+  };
+
   return (
-    <button onClick={(e) => { onClick?.(e); onSelect?.(); }}
-      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-        width: "100%", padding: "7px 10px", border: "none",
-        background: h ? "rgba(0,122,255,0.10)" : "transparent",
-        color: danger ? TO.danger : (h ? TO.accent : TO.text),
-        fontSize: 13.5, fontFamily: "inherit", borderRadius: 6, cursor: "pointer", textAlign: "left",
-        fontWeight: 500,
-      }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <button
+      onClick={(e) => { onClick?.(e); onSelect?.(); }}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      className={cxO(
+        "flex items-center justify-between w-full py-1.5 px-2.5 border-none rounded-lg",
+        "text-[13.5px] font-medium font-[inherit] text-left cursor-pointer",
+        "transition-colors duration-100",
+        h ? "bg-accent/10" : "bg-transparent",
+        getColorClass(),
+        className,
+      )}
+    >
+      <span className="flex items-center gap-2">
         {icon && <IconO name={icon} size={14}/>}
         {label}
       </span>
-      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {shortcut && <kbd style={{ fontSize: 10.5, color: TO.mutedLight, fontFamily: "ui-monospace, monospace" }}>{shortcut}</kbd>}
+      <span className="flex items-center gap-1.5">
+        {shortcut && <kbd className="text-[10.5px] text-muted-light font-mono">{shortcut}</kbd>}
         {active && <IconO name="check" size={13}/>}
       </span>
     </button>
   );
 }
 
-function DropdownDivider() { return <div style={{ height: 1, background: "rgba(0,0,0,0.06)", margin: "4px 6px" }}/>; }
+function DropdownDivider() {
+  return <div className="h-px bg-black/[.06] my-1 mx-1.5"/>;
+}
 
 // ---- Toast / Notify --------------------------------------------------------
 const _toastListeners = new Set();
@@ -163,22 +207,35 @@ function ToastHost() {
     _toastListeners.add(fn);
     return () => _toastListeners.delete(fn);
   }, []);
-  const meta = { success: { icon: "check-circle", color: TO.success }, error: { icon: "x-circle", color: TO.danger }, info: { icon: "info", color: TO.accent } };
+
+  const meta = {
+    success: { icon: "check-circle", color: TO.success },
+    error: { icon: "x-circle", color: TO.danger },
+    info: { icon: "info", color: TO.accent }
+  };
+
   return (
-    <div style={{ position: "fixed", bottom: 18, right: 18, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8, pointerEvents: "none" }}>
+    <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
       {items.map(t => {
         const m = meta[t.kind] || meta.info;
         return (
-          <div key={t.id} style={{
-            display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 12px 14px",
-            background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
-            border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.10)",
-            fontSize: 13.5, color: TO.text, pointerEvents: "auto", minWidth: 240, maxWidth: 380,
-            animation: "gp-slide-in 280ms cubic-bezier(.2,.7,.2,1)",
-          }}>
+          <div
+            key={t.id}
+            className={cxO(
+              "flex items-center gap-2.5 px-4 py-3",
+              "bg-white/98 backdrop-blur-xl border border-black/[.06] rounded-xl",
+              "shadow-lg text-text pointer-events-auto min-w-60 max-w-80",
+              "animate-gp-slide-in",
+            )}
+            style={{
+              fontSize: 13.5,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.10)",
+              animationDuration: "280ms",
+              animationTimingFunction: "cubic-bezier(.2,.7,.2,1)",
+            }}
+          >
             <IconO name={m.icon} size={18} color={m.color} strokeWidth={2}/>
-            <span style={{ flex: 1 }}>{t.message}</span>
+            <span className="flex-1">{t.message}</span>
           </div>
         );
       })}
@@ -187,16 +244,23 @@ function ToastHost() {
 }
 
 // ---- Confirm dialog --------------------------------------------------------
-function ConfirmDialog({ open, title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", danger = false, onConfirm, onClose }) {
+function ConfirmDialog({ open, title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", danger = false, onConfirm, onClose, className }) {
   if (!open) return null;
+
   return (
-    <Modal title={title} onClose={onClose} width={420} footer={
-      <>
-        <ButtonO variant="ghost" onClick={onClose}>{cancelLabel}</ButtonO>
-        <ButtonO variant={danger ? "danger-solid" : "primary"} onClick={() => { onConfirm?.(); onClose?.(); }}>{confirmLabel}</ButtonO>
-      </>
-    }>
-      <div style={{ fontSize: 14, color: TO.textSecondary, lineHeight: 1.55 }}>{message}</div>
+    <Modal
+      title={title}
+      onClose={onClose}
+      width={420}
+      className={className}
+      footer={
+        <>
+          <ButtonO variant="ghost" onClick={onClose}>{cancelLabel}</ButtonO>
+          <ButtonO variant={danger ? "danger-solid" : "primary"} onClick={() => { onConfirm?.(); onClose?.(); }}>{confirmLabel}</ButtonO>
+        </>
+      }
+    >
+      <div className="text-sm text-text-secondary leading-relaxed">{message}</div>
     </Modal>
   );
 }

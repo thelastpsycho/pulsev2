@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import * as XLSX from 'xlsx'
@@ -13,9 +13,9 @@ const safeWindow = () => ({
 });
 
 const w = safeWindow();
-const IR = w.UI.Icon; const AvR = w.UI.Avatar; const PR = w.UI.Pill; const BR = w.UI.Button; const IBR = w.UI.IconButton; const CR = w.UI.Card; const CHR = w.UI.CardHeader; const SR = w.UI.Skeleton; const ER = w.UI.EmptyState; const TR = w.UI.TOKENS;
+const IR = w.UI.Icon; const AvR = w.UI.Avatar; const PR = w.UI.Pill; const BR = w.UI.Button; const CR = w.UI.Card; const CHR = w.UI.CardHeader; const SR = w.UI.Skeleton; const ER = w.UI.EmptyState; const TR = w.UI.TOKENS;
 const SeR = w.Form.Select; const SgR = w.Form.Segmented; const InR = w.Form.Input;
-const PHR = w.Layout.PageHeader; const TBR = w.Layout.Tabs; const LinkR = w.Layout.Link; const navR = w.Layout.navigate;
+const PHR = w.Layout.PageHeader; const LinkR = w.Layout.Link;
 
 // =====================================================================
 // REPORTS — index, custom, logbook
@@ -31,20 +31,19 @@ function ReportsPage({ tab = "index" }) {
       <PHR title="Reports" subtitle="Export and review issue activity"
         actions={<BR variant="outline" icon="download">Export</BR>}
         tabs={
-          <div style={{ display: "flex", gap: 4, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <div className="flex gap-1 border-b border-black/6">
             {tabs.map(t => (
               <LinkR key={t.value} to={t.to}>
-                <div style={{
-                  padding: "8px 12px", color: tab === t.value ? TR.text : TR.muted,
-                  fontSize: 13.5, fontWeight: tab === t.value ? 600 : 500,
-                  borderBottom: `2px solid ${tab === t.value ? TR.accent : "transparent"}`,
-                  marginBottom: -1, cursor: "pointer", letterSpacing: "-0.005em",
-                }}>{t.label}</div>
+                <div className={`px-3 py-2 cursor-pointer tracking-[-0.005em] ${
+                  tab === t.value
+                    ? 'text-text font-semibold border-b-2 border-accent -mb-px'
+                    : 'text-muted font-medium border-b-2 border-transparent'
+                }`}>{t.label}</div>
               </LinkR>
             ))}
           </div>
         }/>
-      <div style={{ padding: "20px 28px 60px", maxWidth: 1280 }}>
+      <div className="px-7 pb-[60px] pt-5 max-w-[1280px]">
         {tab === "index"  && <ReportsIndex/>}
         {tab === "custom" && <ReportsCustom/>}
         {tab === "logbook" && <ReportsLogbook/>}
@@ -60,17 +59,17 @@ function ReportsIndex() {
     { to: "/statistics",      icon: "chart-pie", label: "Statistics", desc: "Aggregated metrics by department and user", color: TR.success },
   ];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
+    <div className="grid grid-cols-2 gap-3.5">
       {tiles.map(t => (
         <LinkR key={t.to} to={t.to}>
           <CR hover>
-            <div style={{ padding: 20, display: "flex", gap: 16, alignItems: "flex-start" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 11, background: `${t.color}15`, color: t.color, display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <div className="p-5 flex gap-4 items-start">
+              <div className="w-11 h-11 rounded-xl grid place-items-center shrink-0" style={{ background: `${t.color}15`, color: t.color }}> {/* Note: dynamic color, keeping inline */}
                 <IR name={t.icon} size={22}/>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{t.label}</div>
-                <div style={{ fontSize: 13, color: TR.muted, marginTop: 4, lineHeight: 1.5 }}>{t.desc}</div>
+              <div className="flex-1">
+                <div className="text-[15px] font-semibold tracking-[-0.01em]">{t.label}</div>
+                <div className="text-sm text-muted mt-1 leading-1.5">{t.desc}</div>
               </div>
               <IR name="chevron-right" size={16} color={TR.mutedLight}/>
             </div>
@@ -176,9 +175,12 @@ function ReportsCustom() {
     if (hasFilters) {
       loadIssues();
     } else {
-      setIssues([]);
-      setAllIssues([]);
-      setMeta(null);
+      // Defer setState calls to avoid synchronous setState in effect
+      Promise.resolve().then(() => {
+        setIssues([]);
+        setAllIssues([]);
+        setMeta(null);
+      });
     }
   }, [filters]);
 
@@ -497,19 +499,21 @@ function ReportsCustom() {
         dateFrom = today.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'last_7_days':
+      case 'last_7_days': {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
         dateFrom = sevenDaysAgo.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'this_week':
+      }
+      case 'this_week': {
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
         dateFrom = startOfWeek.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'last_week':
+      }
+      case 'last_week': {
         const endOfLastWeek = new Date(today);
         endOfLastWeek.setDate(today.getDate() - today.getDay() - 1); // Saturday
         const startOfLastWeek = new Date(endOfLastWeek);
@@ -517,45 +521,53 @@ function ReportsCustom() {
         dateFrom = startOfLastWeek.toISOString().split('T')[0];
         dateTo = endOfLastWeek.toISOString().split('T')[0];
         break;
-      case 'this_month':
+      }
+      case 'this_month': {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         dateFrom = startOfMonth.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'last_month':
+      }
+      case 'last_month': {
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         dateFrom = startOfLastMonth.toISOString().split('T')[0];
         dateTo = endOfLastMonth.toISOString().split('T')[0];
         break;
-      case 'this_quarter':
+      }
+      case 'this_quarter': {
         const quarter = Math.floor(now.getMonth() / 3);
         const startOfQuarter = new Date(now.getFullYear(), quarter * 3, 1);
         dateFrom = startOfQuarter.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'last_30_days':
+      }
+      case 'last_30_days': {
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
         dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'last_90_days':
+      }
+      case 'last_90_days': {
         const ninetyDaysAgo = new Date(today);
         ninetyDaysAgo.setDate(today.getDate() - 90);
         dateFrom = ninetyDaysAgo.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'this_year':
+      }
+      case 'this_year': {
         const startOfYear = new Date(now.getFullYear(), 0, 1);
         dateFrom = startOfYear.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
-      case 'year_to_date':
+      }
+      case 'year_to_date': {
         const startOfYTD = new Date(now.getFullYear(), 0, 1);
         dateFrom = startOfYTD.toISOString().split('T')[0];
         dateTo = today.toISOString().split('T')[0];
         break;
+      }
       case 'custom':
         dateFrom = '';
         dateTo = '';
@@ -582,7 +594,7 @@ function ReportsCustom() {
   const urgentIssues = allIssues.filter(i => i.priority === 'urgent').length;
 
   // Calculate chart data from ALL filtered issues (not just current page)
-  const chartData = useMemo(() => {
+  const chartData = (() => {
     if (!allIssues.length) return null;
 
     // Issues by type
@@ -637,7 +649,7 @@ function ReportsCustom() {
       .sort((a, b) => b.count - a.count);
 
     return { typeData: displayTypeData, departmentData, priorityData };
-  }, [allIssues]);
+  })();
 
   // Get date range display text
   const getDateRangeDisplay = () => {
@@ -668,13 +680,13 @@ function ReportsCustom() {
   return (
     <div>
       {/* Filters */}
-      <CR style={{ marginBottom: 16 }}>
+      <CR className="mb-4">
         <CHR title="Custom Filters" subtitle="Filter issues by multiple criteria"/>
-        <div style={{ padding: "18px 22px 22px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div className="px-5.5 pt-[18px] pb-5.5">
+          <div className="grid grid-cols-3 gap-3">
             {/* Date Range Dropdown */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Date Range</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-1">Date Range</label>
               <SeR
                 value={filters.date_range}
                 onChange={v => handleDateRangeChange(v)}
@@ -693,13 +705,13 @@ function ReportsCustom() {
                   { value: "year_to_date", label: "Year to date" },
                   { value: "custom", label: "Custom range..." },
                 ]}
-                style={{ width: "100%" }}
+                className="w-full"
               />
             </div>
 
             {/* Status */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Status</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-1">Status</label>
               <SeR value={filters.status} onChange={v => updateFilter('status', v)} placeholder="All statuses" options={[
                 { value: "", label: "All statuses" },
                 { value: "open", label: "Open" },
@@ -709,7 +721,7 @@ function ReportsCustom() {
 
             {/* Priority */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Priority</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-1">Priority</label>
               <SeR value={filters.priority} onChange={v => updateFilter('priority', v)} placeholder="All priorities" options={[
                 { value: "", label: "All priorities" },
                 { value: "urgent", label: "Urgent" },
@@ -721,7 +733,7 @@ function ReportsCustom() {
 
             {/* Department */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Department</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-1">Department</label>
               <SeR value={filters.department_id} onChange={v => updateFilter('department_id', v)} placeholder="All departments" options={[
                 { value: "", label: "All departments" },
                 ...departments.filter(d => d.is_active).map(d => ({ value: d.id, label: d.name })),
@@ -730,7 +742,7 @@ function ReportsCustom() {
 
             {/* Issue Type */}
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Issue Type</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-1">Issue Type</label>
               <SeR value={filters.issue_type_id} onChange={v => updateFilter('issue_type_id', v)} placeholder="All types" options={[
                 { value: "", label: "All types" },
                 ...issueTypes.filter(t => t.is_active).map(t => ({ value: t.id, label: t.name })),
@@ -738,7 +750,7 @@ function ReportsCustom() {
             </div>
 
             {/* Export buttons placeholder */}
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <div className="flex items-end gap-2">
               <BR variant="outline" icon="download" size="sm" onClick={exportToPDF} disabled={!hasFilters || loading}>Export PDF</BR>
               <BR variant="outline" icon="file" size="sm" onClick={exportToExcel} disabled={!hasFilters || loading}>Export Excel</BR>
             </div>
@@ -746,30 +758,24 @@ function ReportsCustom() {
 
           {/* Custom Date Fields - Only show when "Custom range" is selected */}
           {filters.date_range === 'custom' && (
-            <div style={{
-              marginTop: 16,
-              padding: "14px 16px",
-              background: "rgba(0,122,255,0.04)",
-              borderRadius: 10,
-              border: "1px solid rgba(0,122,255,0.15)"
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: TR.accent, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            <div className="mt-4 px-4 py-3.5 bg-accent/4 rounded-2xl border border-accent/15">
+              <div className="text-[13px] font-semibold text-accent mb-3 flex items-center gap-1.5">
                 <IR name="calendar" size={14} color={TR.accent}/>
                 Custom Date Range
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Date From</label>
-                  <InR value={filters.date_from} onChange={v => updateFilter('date_from', v)} type="date" placeholder="" style={{ width: "100%" }}/>
+                  <label className="block text-[12px] font-semibold text-muted-light mb-1">Date From</label>
+                  <InR value={filters.date_from} onChange={v => updateFilter('date_from', v)} type="date" placeholder="" className="w-full"/>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: TR.mutedLight, marginBottom: 4, display: "block" }}>Date To</label>
-                  <InR value={filters.date_to} onChange={v => updateFilter('date_to', v)} type="date" placeholder="" style={{ width: "100%" }}/>
+                  <label className="block text-[12px] font-semibold text-muted-light mb-1">Date To</label>
+                  <InR value={filters.date_to} onChange={v => updateFilter('date_to', v)} type="date" placeholder="" className="w-full"/>
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: TR.muted, marginTop: 8 }}>
+              <div className="text-[12px] text-muted mt-2">
                 {filters.date_from && filters.date_to ? (
-                  <span style={{ color: TR.accent, fontWeight: 500 }}>📅 {filters.date_from} → {filters.date_to}</span>
+                  <span className="text-accent font-medium">📅 {filters.date_from} → {filters.date_to}</span>
                 ) : (
                   <span>Select both dates to generate report</span>
                 )}
@@ -779,20 +785,11 @@ function ReportsCustom() {
 
           {/* Show current filter summary */}
           {hasFilters && (
-            <div style={{
-              marginTop: 16,
-              padding: "12px 14px",
-              background: "rgba(0,0,0,0.03)",
-              borderRadius: 8,
-              fontSize: 13,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between"
-            }}>
-              <span style={{ color: TR.muted }}>
-                <span style={{ fontWeight: 600, color: TR.text }}>Active filters:</span>{' '}
+            <div className="mt-4 px-3.5 py-3.5 bg-black/3 rounded-lg text-[13px] flex items-center justify-between">
+              <span className="text-muted">
+                <span className="font-semibold text-text">Active filters:</span>{' '}
                 {filters.date_range !== 'all' && (
-                  <span style={{ marginLeft: 8 }}>📅 {getDateRangeDisplay()}</span>
+                  <span className="ml-2">📅 {getDateRangeDisplay()}</span>
                 )}
                 {filters.status && (
                   <span style={{ marginLeft: 8 }}>· Status: {filters.status}</span>
@@ -804,18 +801,18 @@ function ReportsCustom() {
                   <span style={{ marginLeft: 8 }}>· Department: {departments.find(d => d.id === Number(filters.department_id))?.name || ''}</span>
                 )}
                 {filters.issue_type_id && (
-                  <span style={{ marginLeft: 8 }}>· Type: {issueTypes.find(t => t.id === Number(filters.issue_type_id))?.name || ''}</span>
+                  <span className="ml-2">· Type: {issueTypes.find(t => t.id === Number(filters.issue_type_id))?.name || ''}</span>
                 )}
               </span>
               <BR variant="ghost" size="sm" icon="x" onClick={clearFilters}>Clear all</BR>
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <div className="flex gap-2 mt-4">
             {!hasFilters && (
-              <span style={{ fontSize: 13, color: TR.muted, fontStyle: "italic" }}>Select filters to generate report</span>
+              <span className="text-[13px] text-muted italic">Select filters to generate report</span>
             )}
-            <div style={{ flex: 1 }}/>
+            <div className="flex-1"/>
           </div>
         </div>
       </CR>
@@ -824,11 +821,11 @@ function ReportsCustom() {
       {!hasFilters ? (
         <ER icon="filter" title="Set filters to generate report" description="Use the filters above to create a custom report based on your criteria."/>
       ) : loading ? (
-        <div style={{ padding: 22, textAlign: "center", color: TR.muted }}>Loading report data...</div>
+        <div className="px-5.5 text-center text-muted">Loading report data...</div>
       ) : (
         <>
           {/* Summary Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+          <div className="grid grid-cols-4 gap-3 mb-4">
             <MiniStat label="Total Issues" value={totalCreated} icon="inbox" color={TR.text}/>
             <MiniStat label="Open" value={openIssues} icon="alert" color={TR.accent}/>
             <MiniStat label="Closed" value={totalClosed} icon="check-circle" color={TR.success}/>
@@ -837,11 +834,11 @@ function ReportsCustom() {
 
           {/* Interactive Charts */}
           {chartData && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 }}>
+            <div className="grid grid-cols-2 gap-3 mb-4">
               {/* Issues by Type */}
               <CR>
                 <CHR title="Issues by Type" subtitle="Distribution across issue types"/>
-                <div style={{ padding: "16px 22px 22px" }}>
+                <div className="px-5.5 pt-4 pb-5.5">
                   {chartData.typeData.length > 0 ? (
                     <InteractiveDonutChart
                       data={chartData.typeData}
@@ -849,7 +846,7 @@ function ReportsCustom() {
                       size="medium"
                     />
                   ) : (
-                    <div style={{ textAlign: "center", color: TR.muted, fontSize: 13 }}>No data available</div>
+                    <div className="text-center text-muted text-[13px]">No data available</div>
                   )}
                 </div>
               </CR>
@@ -857,7 +854,7 @@ function ReportsCustom() {
               {/* Issues by Department */}
               <CR>
                 <CHR title="Issues by Department" subtitle="Distribution across departments"/>
-                <div style={{ padding: "16px 22px 22px" }}>
+                <div className="px-5.5 pt-4 pb-5.5">
                   {chartData.departmentData.length > 0 ? (
                     <InteractiveBarChart
                       data={chartData.departmentData}
@@ -865,19 +862,19 @@ function ReportsCustom() {
                       size="medium"
                     />
                   ) : (
-                    <div style={{ textAlign: "center", color: TR.muted, fontSize: 13 }}>No data available</div>
+                    <div className="text-center text-muted text-[13px]">No data available</div>
                   )}
                 </div>
               </CR>
 
               {/* Issues by Priority */}
-              <CR style={{ gridColumn: "1 / -1" }}>
+              <CR className="col-span-2">
                 <CHR title="Issues by Priority" subtitle="Priority distribution overview"/>
-                <div style={{ padding: "16px 22px 22px" }}>
+                <div className="px-5.5 pt-4 pb-5.5">
                   {chartData.priorityData.length > 0 ? (
                     <PriorityDistributionChart data={chartData.priorityData} />
                   ) : (
-                    <div style={{ textAlign: "center", color: TR.muted, fontSize: 13 }}>No data available</div>
+                    <div className="text-center text-muted text-[13px]">No data available</div>
                   )}
                 </div>
               </CR>
@@ -887,31 +884,31 @@ function ReportsCustom() {
           {/* Results Table */}
           <CR>
             <CHR title={`Results: ${totalCreated} issues found`} subtitle="Filtered based on your custom criteria"/>
-            <div style={{ padding: "18px 22px 22px" }}>
+            <div className="px-5.5 pt-[18px] pb-5.5">
               {issues.length === 0 ? (
                 <ER icon="search" title="No issues found" description="Try adjusting your filter criteria."/>
               ) : (
                 <>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+                  <table className="w-full border-collapse text-[13.5px]">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                        <th style={thR}>ID</th>
-                        <th style={thR}>Title</th>
-                        <th style={thR}>Guest · Room</th>
-                        <th style={thR}>Department</th>
-                        <th style={thR}>Priority</th>
-                        <th style={thR}>Status</th>
-                        <th style={thR}>Created</th>
+                      <tr className="border-b border-black/8">
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">ID</th>
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Title</th>
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Guest · Room</th>
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Department</th>
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Priority</th>
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Status</th>
+                        <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Created</th>
                       </tr>
                     </thead>
                     <tbody>
                       {issues.map(issue => (
-                        <tr key={issue.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-                          <td style={tdR}>#{issue.id}</td>
-                          <td style={tdR}>
-                            <div style={{ fontWeight: 500 }}>{issue.title}</div>
+                        <tr key={issue.id} className="border-b border-black/4">
+                          <td className="px-2 py-3 text-text">#{issue.id}</td>
+                          <td className="px-2 py-3 text-text">
+                            <div className="font-medium">{issue.title}</div>
                             {issue.issueTypes && issue.issueTypes.length > 0 && (
-                              <div style={{ fontSize: 12, color: TR.mutedLight, marginTop: 2 }}>
+                              <div className="text-[12px] text-muted-light mt-0.5">
                                 {issue.issueTypes.slice(0, 2).map((t, i) => (
                                   <span key={t.id}>{i > 0 && ", "}{t.name}</span>
                                 ))}
@@ -919,26 +916,22 @@ function ReportsCustom() {
                               </div>
                             )}
                           </td>
-                          <td style={tdR}>
+                          <td className="px-2 py-3 text-text">
                             <div>{issue.name || "—"}</div>
-                            <div style={{ fontSize: 12, color: TR.mutedLight }}>{issue.room_number || issue.location}</div>
+                            <div className="text-[12px] text-muted-light">{issue.room_number || issue.location}</div>
                           </td>
-                          <td style={tdR}>
+                          <td className="px-2 py-3 text-text">
                             {issue.departments?.map(d => <PR key={d.id} color={TR.muted}>{d.name}</PR>)}
                           </td>
-                          <td style={tdR}><span style={{
-                            fontSize: 12, fontWeight: 600, padding: "3px 8px", borderRadius: 6,
-                            background: issue.priority === 'urgent' ? TR.urgent + '20' : issue.priority === 'high' ? TR.high + '20' : issue.priority === 'medium' ? TR.medium + '20' : TR.low + '20',
-                            color: issue.priority === 'urgent' ? TR.urgent : issue.priority === 'high' ? TR.high : issue.priority === 'medium' ? TR.medium : TR.low,
-                            textTransform: "capitalize"
-                          }}>{issue.priority}</span></td>
-                          <td style={tdR}><span style={{
-                            fontSize: 12, fontWeight: 600, padding: "3px 8px", borderRadius: 6,
-                            background: issue.status === 'open' ? TR.accent + '15' : TR.success + '15',
-                            color: issue.status === 'open' ? TR.accent : TR.success,
-                            textTransform: "capitalize"
-                          }}>{issue.status}</span></td>
-                          <td style={tdR}>{new Date(issue.created_at).toLocaleDateString()}</td>
+                          <td className="px-2 py-3 text-text"><span className={`
+                            text-[12px] font-semibold px-2 py-0.5 rounded-md capitalize
+                            ${issue.priority === 'urgent' ? 'bg-urgent/20 text-urgent' : issue.priority === 'high' ? 'bg-high/20 text-high' : issue.priority === 'medium' ? 'bg-medium/20 text-medium' : 'bg-low/20 text-low'}
+                          `}>{issue.priority}</span></td>
+                          <td className="px-2 py-3 text-text"><span className={`
+                            text-[12px] font-semibold px-2 py-0.5 rounded-md capitalize
+                            ${issue.status === 'open' ? 'bg-accent/15 text-accent' : 'bg-success/15 text-success'}
+                          `}>{issue.status}</span></td>
+                          <td className="px-2 py-3 text-text">{new Date(issue.created_at).toLocaleDateString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -946,11 +939,11 @@ function ReportsCustom() {
 
                   {/* Pagination */}
                   {meta && meta.last_page > 1 && (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                      <div style={{ fontSize: 12.5, color: TR.muted }}>
+                    <div className="flex items-center justify-between mt-5 pt-4 border-t border-black/6">
+                      <div className="text-[12.5px] text-muted">
                         Showing {((filters.page - 1) * filters.per_page + 1)}–{Math.min(filters.page * filters.per_page, meta.total)} of {meta.total} issues
                       </div>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <div className="flex gap-1 items-center">
                         <BR
                           size="sm"
                           variant="ghost"
@@ -960,7 +953,7 @@ function ReportsCustom() {
                         >
                           Prev
                         </BR>
-                        <span style={{ fontSize: 12.5, color: TR.muted, padding: "0 8px", fontVariantNumeric: "tabular-nums" }}>
+                        <span className="text-[12.5px] text-muted px-2 tabular-nums">
                           Page {filters.page} of {meta.last_page}
                         </span>
                         <BR
@@ -1009,38 +1002,38 @@ function ReportsLogbook() {
     fetchIssues();
   }, [date]);
 
-  if (loading) return <div style={{ padding: 22, textAlign: "center", color: TR.muted }}>Loading logbook...</div>;
+  if (loading) return <div className="px-5.5 text-center text-muted">Loading logbook...</div>;
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <InR value={date} onChange={setDate} type="date" style={{ width: 170 }}/>
+      <div className="flex items-center gap-2.5 mb-4">
+        <InR value={date} onChange={setDate} type="date" className="w-[170px]"/>
         <SgR value="day" onChange={() => {}} options={[{ value: "day", label: "Day" }, { value: "week", label: "Week" }]}/>
-        <div style={{ flex: 1 }}/>
+        <div className="flex-1"/>
         <BR variant="outline" icon="download" size="sm">Export PDF</BR>
       </div>
       <CR>
-        <div style={{ padding: 22 }}>
-          <div style={{ borderBottom: "2px solid rgba(0,0,0,0.1)", paddingBottom: 12, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <div className="px-5.5">
+          <div className="border-b-2 border-black/10 pb-3 mb-4 flex justify-between items-baseline">
             <div>
-              <div style={{ fontSize: 11.5, color: TR.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Duty Manager Logbook</div>
-              <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em", marginTop: 4 }}>Wednesday, 20 May 2026</div>
+              <div className="text-[11.5px] text-muted-light font-semibold uppercase tracking-wide">Duty Manager Logbook</div>
+              <div className="text-[18px] font-semibold tracking-tight mt-1">Wednesday, 20 May 2026</div>
             </div>
-            <div style={{ textAlign: "right", fontSize: 12, color: TR.muted }}>
+            <div className="text-right text-[12px] text-muted">
               <div>Anvaya Beach Resort &amp; Spa Bali</div>
-              <div style={{ marginTop: 2 }}>Shift: Sofia Reyes · 14:00 – 22:00</div>
+              <div className="mt-0.5">Shift: Sofia Reyes · 14:00 – 22:00</div>
             </div>
           </div>
 
           {issues.slice(0, 6).map((i, idx) => (
-            <div key={i.id} style={{ paddingBottom: 14, marginBottom: 14, borderBottom: idx < 5 ? "1px solid rgba(0,0,0,0.06)" : "none" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>#{i.id} — {i.title}</div>
-                <div style={{ fontSize: 11.5, color: TR.muted, fontVariantNumeric: "tabular-nums" }}>{new Date(i.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+            <div key={i.id} className={`pb-3.5 mb-3.5 ${idx < 5 ? 'border-b border-black/6' : ''}`}>
+              <div className="flex justify-between items-baseline mb-1">
+                <div className="text-[14px] font-semibold">#{i.id} — {i.title}</div>
+                <div className="text-[11.5px] text-muted tabular-nums">{new Date(i.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
               </div>
-              <div style={{ fontSize: 12.5, color: TR.muted, marginBottom: 4 }}>{i.location} · {i.name || "—"} · Priority: {i.priority}</div>
-              <div style={{ fontSize: 13, color: TR.text, lineHeight: 1.5 }}>{i.description}</div>
-              {i.recovery && <div style={{ marginTop: 6, fontSize: 12.5, color: TR.success, fontStyle: "italic" }}>Recovery: {i.recovery}</div>}
+              <div className="text-[12.5px] text-muted mb-1">{i.location} · {i.name || "—"} · Priority: {i.priority}</div>
+              <div className="text-[13px] text-text leading-normal">{i.description}</div>
+              {i.recovery && <div className="mt-1.5 text-[12.5px] text-success italic">Recovery: {i.recovery}</div>}
             </div>
           ))}
         </div>
@@ -1067,8 +1060,8 @@ function StatisticsPage() {
     <div>
       <PHR title="Statistics" subtitle="Aggregated metrics across departments, users, and priorities"
         actions={<><BR variant="outline" icon="refresh" size="md">Refresh</BR><BR variant="outline" icon="download" size="md">Export</BR></>}/>
-      <div style={{ padding: "20px 28px 60px", maxWidth: 1400 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 14 }}>
+      <div className="px-7 pb-[60px] pt-5 max-w-[1400px]">
+        <div className="grid grid-cols-5 gap-3 mb-3.5">
           <MiniStat label="Total" value={data?.summary.total_issues ?? "—"} icon="inbox" color={TR.text}/>
           <MiniStat label="Open" value={data?.summary.open_issues ?? "—"} icon="alert" color={TR.accent}/>
           <MiniStat label="Closed" value={data?.summary.closed_issues ?? "—"} icon="check-circle" color={TR.success}/>
@@ -1076,47 +1069,47 @@ function StatisticsPage() {
           <MiniStat label="Avg. resolution" value={data ? (data.summary.avg_resolution_hours < 1 ? `${Math.round(data.summary.avg_resolution_hours * 60)}m` : `${data.summary.avg_resolution_hours.toFixed(1)}h`) : "—"} icon="clock" color={TR.purple}/>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div className="grid grid-cols-2 gap-3 mb-3.5">
           <CR>
             <CHR title="By priority" subtitle="Open issues only"/>
-            <div style={{ padding: "16px 22px 18px" }}>
+            <div className="px-5.5 pt-4 pb-4.5">
               <PriorityDonut data={data?.by_priority || {}}/>
             </div>
           </CR>
           <CR>
             <CHR title="By status"/>
-            <div style={{ padding: "16px 22px 18px" }}>
+            <div className="px-5.5 pt-4 pb-4.5">
               <StatusSplit data={data?.by_status || {}}/>
             </div>
           </CR>
         </div>
 
-        <CR style={{ marginBottom: 14 }}>
+        <CR className="mb-3.5">
           <CHR title="By department" subtitle="Open / closed / closure rate"/>
-          {!byDept ? <div style={{ padding: 20 }}><SR height={120}/></div> : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+          {!byDept ? <div className="p-5"><SR height={120}/></div> : (
+            <table className="w-full border-collapse text-[13.5px]">
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                  <th style={thR}>Department</th>
-                  <th style={{ ...thR, textAlign: "right" }}>Open</th>
-                  <th style={{ ...thR, textAlign: "right" }}>Closed</th>
-                  <th style={{ ...thR, textAlign: "right" }}>Total</th>
-                  <th style={{ ...thR, textAlign: "right", paddingRight: 22 }}>Closure rate</th>
+                <tr className="border-b border-black/6">
+                  <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Department</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em]">Open</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em]">Closed</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em]">Total</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pr-5.5">Closure rate</th>
                 </tr>
               </thead>
               <tbody>
                 {byDept.departments.map(d => (
-                  <tr key={d.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-                    <td style={{ ...tdR, paddingLeft: 22, fontWeight: 500 }}>{d.name}</td>
-                    <td style={{ ...tdR, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{d.open_issues}</td>
-                    <td style={{ ...tdR, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{d.closed_issues}</td>
-                    <td style={{ ...tdR, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{d.total_issues}</td>
-                    <td style={{ ...tdR, textAlign: "right", paddingRight: 22 }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 80, height: 6, background: "rgba(0,0,0,0.06)", borderRadius: 6, overflow: "hidden" }}>
-                          <div style={{ width: `${d.closure_rate}%`, height: "100%", background: TR.success, borderRadius: 6 }}/>
+                  <tr key={d.id} className="border-b border-black/4">
+                    <td className="px-2 py-3 text-text pl-5.5 font-medium">{d.name}</td>
+                    <td className="px-2 py-3 text-text text-right tabular-nums">{d.open_issues}</td>
+                    <td className="px-2 py-3 text-text text-right tabular-nums">{d.closed_issues}</td>
+                    <td className="px-2 py-3 text-text text-right tabular-nums font-medium">{d.total_issues}</td>
+                    <td className="px-2 py-3 text-text text-right pr-5.5">
+                      <div className="inline-flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-black/6 rounded-md overflow-hidden">
+                          <div className="h-full bg-success rounded-md" style={{ width: `${d.closure_rate}%` }}/>
                         </div>
-                        <span style={{ fontSize: 12.5, color: TR.text, fontVariantNumeric: "tabular-nums", minWidth: 40, textAlign: "right", fontWeight: 500 }}>{d.closure_rate}%</span>
+                        <span className="text-[12.5px] text-text tabular-nums min-w-10 text-right font-medium">{d.closure_rate}%</span>
                       </div>
                     </td>
                   </tr>
@@ -1128,34 +1121,34 @@ function StatisticsPage() {
 
         <CR>
           <CHR title="Top staff by completion" subtitle="Active users with assigned issues"/>
-          {!byUser ? <div style={{ padding: 20 }}><SR height={120}/></div> : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+          {!byUser ? <div className="p-5"><SR height={120}/></div> : (
+            <table className="w-full border-collapse text-[13.5px]">
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                  <th style={thR}>Staff member</th>
-                  <th style={{ ...thR, textAlign: "right" }}>Open</th>
-                  <th style={{ ...thR, textAlign: "right" }}>Closed</th>
-                  <th style={{ ...thR, textAlign: "right" }}>Created</th>
-                  <th style={{ ...thR, textAlign: "right", paddingRight: 22 }}>Completion</th>
+                <tr className="border-b border-black/6">
+                  <th className="px-2.5 py-2.5 text-left text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pl-5.5">Staff member</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em]">Open</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em]">Closed</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em]">Created</th>
+                  <th className="px-2.5 py-2.5 text-right text-[11.5px] font-semibold text-muted-light uppercase tracking-[0.04em] pr-5.5">Completion</th>
                 </tr>
               </thead>
               <tbody>
                 {byUser.users.filter(u => u.total_assigned > 0).map(u => (
-                  <tr key={u.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-                    <td style={{ ...tdR, paddingLeft: 22 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <tr key={u.id} className="border-b border-black/4">
+                    <td className="px-2 py-3 text-text pl-5.5">
+                      <div className="flex items-center gap-2.5">
                         <AvR name={u.name} size={26}/>
                         <div>
-                          <div style={{ fontWeight: 500 }}>{u.name}</div>
-                          <div style={{ fontSize: 11.5, color: TR.mutedLight }}>{u.roles.join(", ")}</div>
+                          <div className="font-medium">{u.name}</div>
+                          <div className="text-[11.5px] text-muted-light">{u.roles.join(", ")}</div>
                         </div>
                       </div>
                     </td>
-                    <td style={{ ...tdR, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{u.assigned_open}</td>
-                    <td style={{ ...tdR, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{u.assigned_closed}</td>
-                    <td style={{ ...tdR, textAlign: "right", fontVariantNumeric: "tabular-nums", color: TR.muted }}>{u.created_count}</td>
-                    <td style={{ ...tdR, textAlign: "right", paddingRight: 22 }}>
-                      <span style={{ fontVariantNumeric: "tabular-nums", color: u.completion_rate > 80 ? TR.success : u.completion_rate > 50 ? TR.warning : TR.muted, fontWeight: 600 }}>{u.completion_rate}%</span>
+                    <td className="px-2 py-3 text-text text-right tabular-nums">{u.assigned_open}</td>
+                    <td className="px-2 py-3 text-text text-right tabular-nums">{u.assigned_closed}</td>
+                    <td className="px-2 py-3 text-muted text-right tabular-nums">{u.created_count}</td>
+                    <td className="px-2 py-3 text-text text-right pr-5.5">
+                      <span className={`tabular-nums font-semibold ${u.completion_rate > 80 ? 'text-success' : u.completion_rate > 50 ? 'text-warning' : 'text-muted'}`}>{u.completion_rate}%</span>
                     </td>
                   </tr>
                 ))}
@@ -1180,24 +1173,24 @@ function GraphsPage() {
     <div>
       <PHR title="Graphs" subtitle="Visual trends across time and categories"
         actions={<SgR value={period} onChange={setPeriod} options={[{ value: "daily", label: "Daily" }, { value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }]}/>}/>
-      <div style={{ padding: "20px 28px 60px", maxWidth: 1400 }}>
-        <CR style={{ marginBottom: 14 }}>
+      <div className="px-7 pb-[60px] pt-5 max-w-[1400px]">
+        <CR className="mb-3.5">
           <CHR title="Issues created vs closed" subtitle={data ? `${data.summary.total_created} created, ${data.summary.total_closed} closed in last ${data.summary.days_analyzed} days` : "—"}/>
-          <div style={{ padding: "18px 22px 22px" }}>
+          <div className="px-5.5 pt-[18px] pb-5.5">
             {data ? <BigTrendChart created={data.created_trend} closed={data.closed_trend}/> : <SR height={260}/>}
           </div>
         </CR>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="grid grid-cols-2 gap-3">
           <CR>
             <CHR title="Priority distribution" subtitle="All issues"/>
-            <div style={{ padding: "16px 22px 22px" }}>
+            <div className="px-5.5 pt-4 pb-5.5">
               {data ? <PriorityBars data={data.priority_distribution}/> : <SR height={180}/>}
             </div>
           </CR>
           <CR>
             <CHR title="Department ranking" subtitle="Issues per department"/>
-            <div style={{ padding: "16px 22px 22px" }}>
+            <div className="px-5.5 pt-4 pb-5.5">
               {data ? <DepartmentBars data={data.department_ranking}/> : <SR height={180}/>}
             </div>
           </CR>
@@ -1213,51 +1206,14 @@ function GraphsPage() {
 function MiniStat({ label, value, icon, color = TR.text }) {
   return (
     <CR>
-      <div style={{ padding: "14px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, color: TR.muted, fontSize: 12, fontWeight: 500 }}>
+      <div className="px-4 py-3.5">
+        <div className="flex items-center gap-1.5 text-muted text-[12px] font-medium">
           <IR name={icon} size={13} color={color}/>
           {label}
         </div>
-        <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", marginTop: 4, color, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+        <div className="text-[24px] font-semibold tracking-tight mt-1 tabular-nums" style={{ color }}>{value}</div>
       </div>
     </CR>
-  );
-}
-
-function DailyBarChart({ data }) {
-  const w = 880, h = 240, padL = 30, padR = 14, padT = 14, padB = 30;
-  const maxV = Math.max(1, ...data.map(d => Math.max(d.created, d.closed)));
-  const barGroupWidth = (w - padL - padR) / data.length;
-  const barW = Math.max(2, barGroupWidth * 0.36);
-  const toY = (v) => padT + (1 - v / maxV) * (h - padT - padB);
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 14, fontSize: 12, color: TR.muted, marginBottom: 8 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, background: TR.accent, borderRadius: 2 }}/>Created</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, background: TR.success, borderRadius: 2 }}/>Closed</span>
-      </div>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", display: "block" }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
-          const y = padT + p * (h - padT - padB);
-          return (<g key={i}>
-            <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="rgba(0,0,0,0.05)"/>
-            <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="10.5" fill={TR.mutedLight}>{Math.round(maxV * (1 - p))}</text>
-          </g>);
-        })}
-        {data.map((d, i) => {
-          const xc = padL + i * barGroupWidth + barGroupWidth / 2;
-          return (
-            <g key={i}>
-              <rect x={xc - barW - 1} y={toY(d.created)} width={barW} height={h - padB - toY(d.created)} fill={TR.accent} rx="2"/>
-              <rect x={xc + 1} y={toY(d.closed)} width={barW} height={h - padB - toY(d.closed)} fill={TR.success} rx="2" opacity="0.85"/>
-              {(i % Math.max(1, Math.floor(data.length / 12)) === 0) && (
-                <text x={xc} y={h - 10} textAnchor="middle" fontSize="10.5" fill={TR.mutedLight}>{d.day}</text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-    </div>
   );
 }
 
@@ -1396,7 +1352,7 @@ function DepartmentBars({ data }) {
   const max = Math.max(1, ...data.map(d => d.issue_count));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {data.slice(0, 7).map((d, i) => (
+      {data.slice(0, 7).map((d) => (
         <div key={d.department}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
             <span style={{ color: TR.text, fontWeight: 500 }}>{d.department}</span>
@@ -1411,9 +1367,6 @@ function DepartmentBars({ data }) {
   );
 }
 
-const thR = { padding: "10px 8px", textAlign: "left", fontSize: 11.5, fontWeight: 600, color: TR.mutedLight, textTransform: "uppercase", letterSpacing: "0.04em", paddingLeft: 22 };
-const tdR = { padding: "12px 8px", color: TR.text };
-
 // =====================================================================
 // Interactive Chart Components for Custom Reports
 // =====================================================================
@@ -1424,17 +1377,22 @@ function InteractiveDonutChart({ data, colors, size = "medium" }) {
                       size === "medium" ? { cx: 100, cy: 100, r: 65, sw: 22 } :
                       { cx: 80, cy: 80, r: 50, sw: 18 };
 
-  let acc = 0;
-  const segments = data.map((item, index) => {
-    const start = acc / total;
-    acc += item.count;
+  const segments = data.reduce((acc, item, index) => {
+    const start = acc.accumulator / total;
+    acc.accumulator += item.count;
     return {
-      ...item,
-      color: colors[index % colors.length],
-      start,
-      end: acc / total
+      ...acc,
+      segments: [
+        ...acc.segments,
+        {
+          ...item,
+          color: colors[index % colors.length],
+          start,
+          end: acc.accumulator / total
+        }
+      ]
     };
-  });
+  }, { accumulator: 0, segments: [] }).segments;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
@@ -1497,9 +1455,8 @@ function InteractiveDonutChart({ data, colors, size = "medium" }) {
   );
 }
 
-function InteractiveBarChart({ data, color, size = "medium" }) {
+function InteractiveBarChart({ data, color }) {
   const max = Math.max(1, ...data.map(d => d.count));
-  const height = size === "large" ? 200 : size === "medium" ? 160 : 120;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

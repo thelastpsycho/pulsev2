@@ -37,7 +37,7 @@ function App() {
           setUser(r.user);
           setAuthLoading(false);
         })
-        .catch(err => {
+        .catch(() => {
           localStorage.removeItem("gp_token");
           setAuthLoading(false);
         });
@@ -60,7 +60,7 @@ function App() {
   };
 
   if (authLoading) {
-    return <div style={{ display: "grid", placeItems: "center", height: "100vh", color: "#86868b", fontSize: 13 }}>Loading…</div>;
+    return <div className="grid place-items-center h-screen text-muted-light text-xs">Loading…</div>;
   }
 
   if (!user) return <><window.PageLogin onLogin={onLogin}/><ToastHost/></>;
@@ -82,6 +82,8 @@ function App() {
     page = <window.PageReports tab="index"/>;
   } else if (path === "/reports/custom") {
     page = <window.PageReports tab="custom"/>;
+  } else if (path === "/reports/builder") {
+    page = can(user, "reports.view") ? (window.SimpleReportBuilder ? <window.SimpleReportBuilder/> : <NotFound/>) : <NotFound/>;
   } else if (path === "/reports/logbook") {
     page = <window.PageReports tab="logbook"/>;
   } else if (path === "/statistics") {
@@ -113,7 +115,7 @@ function App() {
 function NotFound() {
   const { EmptyState, Button } = window.PulseUI;
   return (
-    <div style={{ display: "grid", placeItems: "center", height: "calc(100vh - 56px)" }}>
+    <div className="grid place-items-center" style={{ height: "calc(100vh - 56px)" }}>
       <EmptyState icon="search" title="Page not found" description="The page you're looking for doesn't exist."
         action={<Button onClick={() => navigate("/")}>Back to dashboard</Button>}/>
     </div>

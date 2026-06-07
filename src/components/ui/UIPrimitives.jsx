@@ -1,10 +1,10 @@
-import { useState } from 'react'
 // ============================================================================
 // UI primitives — Icon, Button, Pill, Avatar, Card, KBD, Skeleton
 // Apple-minimal aesthetic: light neutrals, system blue accent, subtle shadows
+// All styling via Tailwind classes.
 // ============================================================================
 
-// ---- Design tokens ---------------------------------------------------------
+// ---- Design tokens (kept for JS lookup: SVG fills, chart colors, etc.) -----
 const TOKENS = {
   accent: "#007aff",
   text: "#1d1d1f",
@@ -27,12 +27,15 @@ const TOKENS = {
   gold: "#b8860b",
 };
 
+// Tiny classnames helper
+const cx = (...xs) => xs.filter(Boolean).join(" ");
+
 // ---- Icons (SF-style, 1.6 stroke, rounded) ---------------------------------
-function Icon({ name, size = 18, color = "currentColor", strokeWidth = 1.6, style, className }) {
+function Icon({ name, size = 18, color = "currentColor", strokeWidth = 1.6, className }) {
   const props = {
     width: size, height: size, viewBox: "0 0 24 24",
     fill: "none", stroke: color, strokeWidth, strokeLinecap: "round", strokeLinejoin: "round",
-    style, className,
+    className,
   };
   switch (name) {
     case "pulse":          return <svg {...props}><path d="M3 12h3l2-6 4 12 2-6h7"/></svg>;
@@ -106,33 +109,43 @@ function Icon({ name, size = 18, color = "currentColor", strokeWidth = 1.6, styl
 }
 
 // ---- Avatar ----------------------------------------------------------------
-function Avatar({ name, size = 32, style }) {
+// Dynamic per-name hue rendered via inline styles
+function Avatar({ name, size = 32, className }) {
   const initials = (name || "?").replace(/^(Mr\.|Mrs\.|Ms\.|Dr\.|Sheikh|Sir)\s+/i, "")
     .split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase();
   const hue = [...(name || "x")].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const fontPx = Math.round(size * 0.38);
   return (
-    <div style={{
-      width: size, height: size, borderRadius: size, flexShrink: 0,
-      background: `hsl(${hue}, 32%, 88%)`, color: `hsl(${hue}, 40%, 30%)`,
-      display: "grid", placeItems: "center",
-      fontSize: size * 0.38, fontWeight: 600, letterSpacing: "-0.01em",
-      ...style,
-    }}>{initials}</div>
+    <div
+      className={cx(
+        "rounded-full shrink-0 grid place-items-center font-semibold tracking-tightish",
+        className,
+      )}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: `hsl(${hue}, 32%, 88%)`,
+        color: `hsl(${hue}, 40%, 30%)`,
+        fontSize: `${fontPx}px`
+      }}
+    >{initials}</div>
   );
 }
 
 // ---- Pill / Badge ----------------------------------------------------------
-function Pill({ children, color = "#1d1d1f", bg, dot = false, style }) {
+function Pill({ children, color = "#1d1d1f", bg, dot = false, className }) {
+  const bgColor = bg || color + "1a";
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: dot ? 6 : 4,
-      padding: dot ? "3px 9px 3px 7px" : "2.5px 8px",
-      borderRadius: 999, fontSize: 11.5, fontWeight: 600,
-      color, background: bg || `${color}1a`,
-      letterSpacing: "-0.005em", lineHeight: 1.3, whiteSpace: "nowrap",
-      ...style,
-    }}>
-      {dot && <span style={{ width: 6, height: 6, borderRadius: 6, background: color }}/>}
+    <span
+      className={cx(
+        "inline-flex items-center rounded-full font-semibold whitespace-nowrap leading-tight tracking-body",
+        "text-[11.5px]",
+        dot ? "gap-1.5 py-[3px] pl-[7px] pr-[9px]" : "gap-1 py-[2.5px] px-2",
+        className,
+      )}
+      style={{ color, backgroundColor: bgColor }}
+    >
+      {dot && <span style={{ backgroundColor: color }} className="w-1.5 h-1.5 rounded-full"/>}
       {children}
     </span>
   );
@@ -153,91 +166,89 @@ function PriorityPill({ value }) { const m = PRIORITY[value] || PRIORITY.medium;
 function StatusPill({ value })   { const m = STATUS[value] || STATUS.open; return <Pill color={m.color}>{m.label}</Pill>; }
 
 // ---- Button ----------------------------------------------------------------
-function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, disabled, loading, type = "button", title, style, fullWidth }) {
+function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, disabled, loading, type = "button", title, className, fullWidth }) {
   const sizes = {
-    xs: { padding: "4px 8px", fontSize: 12, gap: 5, radius: 6, iconSize: 13 },
-    sm: { padding: "5px 10px", fontSize: 12.5, gap: 5, radius: 7, iconSize: 14 },
-    md: { padding: "7px 13px", fontSize: 13.5, gap: 6, radius: 8, iconSize: 15 },
-    lg: { padding: "10px 18px", fontSize: 15, gap: 8, radius: 10, iconSize: 17 },
+    xs: { cls: "py-1 px-2 text-xs gap-[5px] rounded-md", icon: 13 },
+    sm: { cls: "py-[5px] px-2.5 text-[12.5px] gap-[5px] rounded-[7px]", icon: 14 },
+    md: { cls: "py-[7px] px-[13px] text-[13.5px] gap-1.5 rounded-lg", icon: 15 },
+    lg: { cls: "py-2.5 px-[18px] text-[15px] gap-2 rounded-[10px]", icon: 17 },
   }[size];
   const variants = {
-    primary:   { bg: TOKENS.accent, color: "#fff", border: "none", hover: "#0a6fe0" },
-    secondary: { bg: "#f2f2f5", color: TOKENS.text, border: "1px solid rgba(0,0,0,0.04)", hover: "#e7e7eb" },
-    ghost:     { bg: "transparent", color: TOKENS.text, border: "none", hover: "rgba(0,0,0,0.05)" },
-    outline:   { bg: "#fff", color: TOKENS.text, border: "1px solid rgba(0,0,0,0.10)", hover: "#fafafa" },
-    danger:    { bg: "rgba(255,59,48,0.10)", color: TOKENS.danger, border: "none", hover: "rgba(255,59,48,0.18)" },
-    "danger-solid": { bg: TOKENS.danger, color: "#fff", border: "none", hover: "#e0322a" },
-    success:   { bg: TOKENS.success, color: "#fff", border: "none", hover: "#2db84e" },
+    primary:        "bg-accent text-white border-none hover:bg-accent-hover",
+    secondary:      "bg-[#f2f2f5] text-text border border-black/[.04] hover:bg-[#e7e7eb]",
+    ghost:          "bg-transparent text-text border-none hover:bg-black/5",
+    outline:        "bg-white text-text border border-black/10 hover:bg-bg-soft",
+    danger:         "bg-danger/10 text-danger border-none hover:bg-danger/[.18]",
+    "danger-solid": "bg-danger text-white border-none hover:bg-danger-hover",
+    success:        "bg-success text-white border-none hover:bg-success-hover",
   }[variant];
-  const [hover, setHover] = useState(false);
   return (
     <button
       type={type} onClick={onClick} disabled={disabled || loading} title={title}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{
-        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: sizes.gap,
-        padding: sizes.padding, fontSize: sizes.fontSize, fontWeight: 550, letterSpacing: "-0.005em",
-        border: variants.border, borderRadius: sizes.radius,
-        background: (hover && !disabled && !loading) ? variants.hover : variants.bg,
-        color: variants.color, cursor: (disabled || loading) ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1, transition: "background 120ms ease",
-        fontFamily: "inherit", lineHeight: 1.2, width: fullWidth ? "100%" : "auto",
-        ...style,
-      }}>
-      {loading ? <Spinner size={sizes.iconSize}/> : icon && <Icon name={icon} size={sizes.iconSize}/>}
+      className={cx(
+        "inline-flex items-center justify-center font-medium tracking-body",
+        "transition-colors duration-[120ms] font-[inherit] leading-tight",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        loading && "cursor-not-allowed",
+        fullWidth ? "w-full" : "w-auto",
+        sizes.cls,
+        variants,
+        className,
+      )}>
+      {loading ? <Spinner size={sizes.icon}/> : icon && <Icon name={icon} size={sizes.icon}/>}
       {children}
-      {iconRight && !loading && <Icon name={iconRight} size={sizes.iconSize}/>}
+      {iconRight && !loading && <Icon name={iconRight} size={sizes.icon}/>}
     </button>
   );
 }
 
 // ---- Icon button -----------------------------------------------------------
-function IconButton({ icon, onClick, title, size = 32, active, style, disabled }) {
-  const [hover, setHover] = useState(false);
+function IconButton({ icon, onClick, title, size = 32, active, className, disabled }) {
   return (
     <button onClick={onClick} title={title} disabled={disabled}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{
-        width: size, height: size, borderRadius: 8, border: "none",
-        background: active ? "rgba(0,122,255,0.10)" : (hover ? "rgba(0,0,0,0.05)" : "transparent"),
-        color: active ? TOKENS.accent : TOKENS.text,
-        display: "grid", placeItems: "center", cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1, transition: "background 120ms",
-        ...style,
-      }}>
+      className={cx(
+        "rounded-lg border-none grid place-items-center transition-colors duration-[120ms]",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        active
+          ? "bg-accent/10 text-accent hover:bg-accent/10"
+          : "bg-transparent text-text hover:bg-black/5",
+        `w-[${size}px] h-[${size}px]`,
+        !disabled && "cursor-pointer",
+        className,
+      )}>
       <Icon name={icon} size={size * 0.5}/>
     </button>
   );
 }
 
 // ---- Card ------------------------------------------------------------------
-function Card({ children, style, padding, hover, onClick }) {
-  const [h, setH] = useState(false);
+function Card({ children, className, padding, hover, onClick }) {
+  const padCls = padding != null
+    ? (typeof padding === "number" ? `p-[${padding}px]` : `p-${padding}`)
+    : "";
   return (
     <div onClick={onClick}
-      onMouseEnter={() => hover && setH(true)} onMouseLeave={() => hover && setH(false)}
-      style={{
-        background: "#fff", borderRadius: 12,
-        border: "1px solid rgba(0,0,0,0.06)",
-        boxShadow: h ? "0 4px 16px rgba(0,0,0,0.08)" : "0 1px 2px rgba(0,0,0,0.03)",
-        padding: padding ?? 0, overflow: "hidden",
-        transition: "box-shadow 200ms ease",
-        cursor: onClick ? "pointer" : "default",
-        ...style,
-      }}>{children}</div>
+      className={cx(
+        "bg-white rounded-xl border border-black/[.06] overflow-hidden",
+        "transition-shadow duration-200",
+        hover && "hover:shadow-card-hover",
+        onClick ? "cursor-pointer" : "cursor-default",
+        padCls,
+        className,
+      )}>{children}</div>
   );
 }
 
-function CardHeader({ title, subtitle, action, style }) {
+function CardHeader({ title, subtitle, action, className }) {
   return (
-    <div style={{
-      padding: "16px 22px 14px", borderBottom: "1px solid rgba(0,0,0,0.05)",
-      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-      ...style,
-    }}>
+    <div className={cx(
+      "pt-4 pb-3.5 px-[22px] border-b border-black/[.05]",
+      "flex items-center justify-between gap-3",
+      className,
+    )}>
       <div>
-        <div style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em" }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 12.5, color: TOKENS.mutedLight, marginTop: 2 }}>{subtitle}</div>}
+        <div className="text-[14.5px] font-semibold tracking-tightish">{title}</div>
+        {subtitle && <div className="text-[12.5px] text-muted-light mt-0.5">{subtitle}</div>}
       </div>
       {action}
     </div>
@@ -245,14 +256,22 @@ function CardHeader({ title, subtitle, action, style }) {
 }
 
 // ---- Skeleton --------------------------------------------------------------
-function Skeleton({ width = "100%", height = 14, radius = 6, style }) {
-  return <div style={{ width, height, borderRadius: radius, background: "linear-gradient(90deg, #f0f0f3 0%, #e7e7eb 50%, #f0f0f3 100%)", backgroundSize: "200% 100%", animation: "gp-shimmer 1.4s linear infinite", ...style }}/>;
+function Skeleton({ width = "100%", height = 14, radius = 6, className }) {
+  const w = typeof width === "number" ? `w-[${width}px]` : "w-full";
+  const h = typeof height === "number" ? `h-[${height}px]` : `h-[${height}]`;
+  const r = `rounded-[${radius}px]`;
+  return <div className={cx(
+    w, h, r,
+    "bg-gradient-to-r from-[#f0f0f3] via-[#e7e7eb] to-[#f0f0f3] bg-[length:200%_100%]",
+    "animate-shimmer",
+    className,
+  )}/>;
 }
 
 // ---- Spinner ---------------------------------------------------------------
 function Spinner({ size = 16, color = "currentColor" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: "gp-spin 0.8s linear infinite" }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" className="animate-gp-spin">
       <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2.4" fill="none" strokeLinecap="round" strokeDasharray="14 60" opacity="0.9"/>
     </svg>
   );
@@ -261,29 +280,32 @@ function Spinner({ size = 16, color = "currentColor" }) {
 // ---- Empty state -----------------------------------------------------------
 function EmptyState({ icon = "inbox", title, description, action }) {
   return (
-    <div style={{ padding: "48px 24px", textAlign: "center" }}>
-      <div style={{ width: 56, height: 56, borderRadius: 14, background: "#f5f5f7", display: "inline-grid", placeItems: "center", marginBottom: 14 }}>
+    <div className="py-12 px-6 text-center">
+      <div className="w-14 h-14 rounded-[14px] bg-bg inline-grid place-items-center mb-3.5">
         <Icon name={icon} size={26} color={TOKENS.mutedLight}/>
       </div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: TOKENS.text, marginBottom: 4 }}>{title}</div>
-      {description && <div style={{ fontSize: 13.5, color: TOKENS.muted, marginBottom: action ? 18 : 0, maxWidth: 320, margin: "0 auto" }}>{description}</div>}
-      {action && <div style={{ marginTop: 18 }}>{action}</div>}
+      <div className="text-[15px] font-semibold text-text mb-1">{title}</div>
+      {description && <div className={cx("text-[13.5px] text-muted max-w-[320px] mx-auto", action && "mb-[18px]")}>{description}</div>}
+      {action && <div className="mt-[18px]">{action}</div>}
     </div>
   );
 }
 
 // ---- KBD -------------------------------------------------------------------
 function Kbd({ children }) {
-  return <kbd style={{
-    display: "inline-flex", alignItems: "center", padding: "1px 6px",
-    background: "#f2f2f5", borderRadius: 5, border: "1px solid rgba(0,0,0,0.08)",
-    boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
-    fontSize: 11, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-    color: TOKENS.muted, minWidth: 18, justifyContent: "center",
-  }}>{children}</kbd>;
+  return <kbd className={cx(
+    "inline-flex items-center justify-center px-1.5 py-px",
+    "bg-[#f2f2f5] rounded-[5px] border border-black/[.08] shadow-kbd",
+    "text-[11px] font-mono text-muted min-w-[18px]",
+  )}>{children}</kbd>;
 }
 
+// Also attach to window for legacy code
 window.PulseUI = {
   TOKENS, Icon, Avatar, Pill, PriorityPill, StatusPill, PRIORITY, STATUS,
   Button, IconButton, Card, CardHeader, Skeleton, Spinner, EmptyState, Kbd,
+  cx,
 };
+
+// ES module exports for modern imports
+export { TOKENS, Icon, Avatar, Pill, PriorityPill, StatusPill, PRIORITY, STATUS, Button, IconButton, Card, CardHeader, Skeleton, Spinner, EmptyState, Kbd, cx };

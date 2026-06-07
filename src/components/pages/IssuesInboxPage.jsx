@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 // ============================================================================
 // Issues — Inbox layout (list column + detail pane), like the original
 // Guest Pulse Apple-mail-style design.
@@ -12,10 +12,10 @@ const safeWindow = () => ({
 });
 
 const w = safeWindow();
-const IIB = w.UI.Icon; const AvIB = w.UI.Avatar; const PIB = w.UI.Pill; const StIB = w.UI.StatusPill; const BIB = w.UI.Button; const IBIB = w.UI.IconButton; const CIB = w.UI.Card; const CHIB = w.UI.CardHeader; const SIB = w.UI.Skeleton; const EIB = w.UI.EmptyState; const TIB = w.UI.TOKENS;
-const FIB = w.Form.Field; const InIB = w.Form.Input; const TaIB = w.Form.Textarea; const SeIB = w.Form.Select; const MsIB = w.Form.MultiSelect; const CbIB = w.Form.Checkbox; const SgIB = w.Form.Segmented;
-const MdIB = w.Overlay.Modal; const DrIB = w.Overlay.Drawer; const DdIB = w.Overlay.Dropdown; const DiIB = w.Overlay.DropdownItem; const DdvIB = w.Overlay.DropdownDivider; const CnIB = w.Overlay.ConfirmDialog;
-const navIB = w.Layout.navigate; const LkIB = w.Layout.Link; const PhIB = w.Layout.PageHeader;
+const IIB = w.UI.Icon; const AvIB = w.UI.Avatar; const PIB = w.UI.Pill; const PrIB = w.UI.PriorityPill; const StIB = w.UI.StatusPill; const BIB = w.UI.Button; const IBIB = w.UI.IconButton; const CIB = w.UI.Card; const SIB = w.UI.Skeleton; const TIB = w.UI.TOKENS;
+const InIB = w.Form.Input; const SeIB = w.Form.Select; const SgIB = w.Form.Segmented;
+const MdIB = w.Overlay.Modal; const DiIB = w.Overlay.DropdownItem; const DdvIB = w.Overlay.DropdownDivider; const CnIB = w.Overlay.ConfirmDialog;
+const navIB = w.Layout.navigate; const LkIB = w.Layout.Link;
 
 // =====================================================================
 // MAIN — Issues inbox (list + detail two-column)
@@ -59,10 +59,43 @@ function IssuesInboxPage({ selectedId }) {
     }
   }, [allIssues, selectedId]);
 
+  // Keyboard navigation for issue list
+  useEffect(() => {
+    const handleNextIssue = () => {
+      if (!allIssues || allIssues.length === 0) return;
+      const currentIndex = allIssues.findIndex(i => i.id === selectedId);
+      const nextIndex = currentIndex < allIssues.length - 1 ? currentIndex + 1 : 0;
+      navIB(`/issues/${allIssues[nextIndex].id}`);
+    };
+
+    const handlePrevIssue = () => {
+      if (!allIssues || allIssues.length === 0) return;
+      const currentIndex = allIssues.findIndex(i => i.id === selectedId);
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : allIssues.length - 1;
+      navIB(`/issues/${allIssues[prevIndex].id}`);
+    };
+
+    const handleOpenSelected = () => {
+      if (selectedId) {
+        navIB(`/issues/${selectedId}`);
+      }
+    };
+
+    window.addEventListener('gp:issues:next', handleNextIssue);
+    window.addEventListener('gp:issues:previous', handlePrevIssue);
+    window.addEventListener('gp:issues:open', handleOpenSelected);
+
+    return () => {
+      window.removeEventListener('gp:issues:next', handleNextIssue);
+      window.removeEventListener('gp:issues:previous', handlePrevIssue);
+      window.removeEventListener('gp:issues:open', handleOpenSelected);
+    };
+  }, [allIssues, selectedId]);
+
   const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }));
 
   return (
-    <div style={{ display: "flex", flex: 1, minHeight: 0, height: "100%" }}>
+    <div className="flex flex-1 min-h-0 h-full">
       <IssuesListColumn
         issues={allIssues} loading={loading}
         selectedId={selectedId} filters={filters} setF={setF} setFilters={setFilters}
@@ -113,33 +146,21 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
   }[filters.status] || "Issues";
 
   return (
-    <div style={{
-      width: 380, flexShrink: 0,
-      borderRight: "1px solid rgba(0,0,0,0.06)",
-      background: "rgba(250,250,252,0.7)",
-      backdropFilter: "saturate(180%) blur(20px)",
-      display: "flex", flexDirection: "column",
-      minHeight: 0,
-    }}>
+    <div className="w-[380px] shrink-0 flex flex-col min-h-0 border-r border-black/6 bg-[rgba(250,250,252,0.7)] backdrop-saturate-180 backdrop-blur-[20px]">
       {/* Header */}
-      <div style={{ padding: "18px 20px 10px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+      <div className="px-5 pb-2.5 pt-[18px]">
+        <div className="flex justify-between items-baseline mb-3">
           <div>
-            <h2 style={{ fontSize: 19, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>{filterLabel}</h2>
-            <div style={{ fontSize: 12.5, color: TIB.mutedLight, marginTop: 2 }}>
+            <h2 className="text-[19px] font-semibold tracking-[-0.02em] m-0">{filterLabel}</h2>
+            <div className="text-[12.5px] text-muted-light mt-0.5">
               {loading ? "Loading…" : `${issues?.length || 0} ${(issues?.length || 0) === 1 ? "issue" : "issues"}`}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            <div ref={sortRef} style={{ position: "relative" }}>
+          <div className="flex gap-1">
+            <div ref={sortRef} className="relative">
               <IBIB icon="filter" onClick={() => setSortOpen(s => !s)} size={30} title="Sort"/>
               {sortOpen && (
-                <div style={{
-                  position: "absolute", right: 0, top: 36, zIndex: 50, minWidth: 180,
-                  background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
-                  borderRadius: 10, padding: 4,
-                  boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
-                }}>
+                <div className="absolute right-0 top-9 z-50 min-w-[180px] bg-[rgba(255,255,255,0.98)] backdrop-blur-[20px] rounded-xl p-1 shadow-[0_10px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)]">
                   <DiIB icon="clock" label="Newest first" active={filters.sort_by === "created_at"} onClick={() => { setF("sort_by", "created_at"); setSortOpen(false); }}/>
                   <DiIB icon="refresh" label="Recently updated" active={filters.sort_by === "updated_at"} onClick={() => { setF("sort_by", "updated_at"); setSortOpen(false); }}/>
                 </div>
@@ -150,54 +171,42 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
         </div>
 
         {/* Search */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "rgba(118,118,128,0.12)", borderRadius: 10,
-          padding: "7px 10px", fontSize: 13.5, marginBottom: 10,
-        }}>
+        <div className="flex items-center gap-2 bg-black/12 rounded-xl px-2.5 py-[7px] text-[13.5px] mb-2.5">
           <IIB name="search" size={15} color={TIB.mutedLight}/>
           <input
             value={filters.search} onChange={e => setF("search", e.target.value)}
             placeholder="Search by guest, room, title, ID"
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: 13.5, color: TIB.text }}
+            className="flex-1 border-none outline-none bg-transparent font-inherit text-[13.5px] text-text"
           />
-          {filters.search && <button onClick={() => setF("search", "")} style={{ background: "none", border: "none", padding: 2, cursor: "pointer", display: "grid", placeItems: "center" }}><IIB name="x" size={12} color={TIB.mutedLight}/></button>}
+          {filters.search && <button onClick={() => setF("search", "")} className="bg-none border-none p-0.5 cursor-pointer grid place-items-center"><IIB name="x" size={12} color={TIB.mutedLight}/></button>}
         </div>
 
         {/* Status segmented */}
-        <SgIB value={filters.status} onChange={v => setF("status", v)} options={tabs} style={{ width: "100%" }}/>
+        <SgIB value={filters.status} onChange={v => setF("status", v)} options={tabs} className="w-full"/>
 
         {/* Filter dropdowns */}
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <div className="flex gap-2 mt-2.5">
           <SeIB value={filters.issue_type_id} onChange={v => setF("issue_type_id", v)} placeholder="Any issue type" options={[
             { value: "", label: "Any issue type" },
             ...issueTypes.map(t => ({ value: t.id, label: t.name }))
-          ]} style={{ flex: 1 }}/>
+          ]} className="flex-1"/>
           <SeIB value={filters.department_id} onChange={v => setF("department_id", v)} placeholder="Any department" options={[
             { value: "", label: "Any department" },
             ...departments.map(d => ({ value: d.id, label: d.name }))
-          ]} style={{ flex: 1 }}/>
+          ]} className="flex-1"/>
         </div>
 
         {/* Active filter chips */}
         {(filters.issue_type_id || filters.department_id) && (
-          <div style={{ display: "flex", gap: 4, marginTop: 10, flexWrap: "wrap" }}>
+          <div className="flex gap-1 mt-2.5 flex-wrap">
             {filters.issue_type_id && (
-              <button onClick={() => setF("issue_type_id", "")} style={{
-                display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 6px 3px 9px",
-                background: "rgba(0,122,255,0.10)", color: TIB.accent, fontSize: 11.5, fontWeight: 500,
-                border: "none", borderRadius: 6, cursor: "pointer",
-              }}>
+              <button onClick={() => setF("issue_type_id", "")} className="inline-flex items-center gap-1 px-[6px] py-[3px] bg-accent/10 text-accent text-[11.5px] font-medium border-none rounded-md cursor-pointer">
                 Type: {issueTypes.find(t => t.id === Number(filters.issue_type_id))?.name || filters.issue_type_id}
                 <IIB name="x" size={10} strokeWidth={2.5}/>
               </button>
             )}
             {filters.department_id && (
-              <button onClick={() => setF("department_id", "")} style={{
-                display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 6px 3px 9px",
-                background: "rgba(0,122,255,0.10)", color: TIB.accent, fontSize: 11.5, fontWeight: 500,
-                border: "none", borderRadius: 6, cursor: "pointer",
-              }}>
+              <button onClick={() => setF("department_id", "")} className="inline-flex items-center gap-1 px-[6px] py-[3px] bg-accent/10 text-accent text-[11.5px] font-medium border-none rounded-md cursor-pointer">
                 Dept: {departments.find(d => d.id === Number(filters.department_id))?.name}
                 <IIB name="x" size={10} strokeWidth={2.5}/>
               </button>
@@ -207,26 +216,26 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
       </div>
 
       {/* List */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "4px 10px 24px" }}>
+      <div className="flex-1 overflow-y-auto px-2.5 pb-6 pt-1">
         {loading ? (
-          <div style={{ padding: 12 }}>
+          <div className="p-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} style={{ display: "flex", gap: 10, padding: "10px 8px" }}>
+              <div key={i} className="flex gap-2.5 p-[10px_8px]">
                 <SIB width={36} height={36} radius={36}/>
-                <div style={{ flex: 1 }}>
-                  <SIB width="60%" height={12}/>
-                  <SIB width="40%" height={10} style={{ marginTop: 6 }}/>
-                  <SIB width="90%" height={14} style={{ marginTop: 8 }}/>
+                <div className="flex-1">
+                  <SIB width="60%" height={12} className="mt-1.5"/>
+                  <SIB width="40%" height={10} className="mt-1.5"/>
+                  <SIB width="90%" height={14} className="mt-2"/>
                 </div>
               </div>
             ))}
           </div>
         ) : (issues?.length || 0) === 0 ? (
-          <div style={{ padding: "32px 16px", textAlign: "center", color: TIB.mutedLight }}>
+          <div className="px-4 py-8 text-center text-muted-light">
             <IIB name="inbox" size={28} color="#c7c7cc"/>
-            <div style={{ marginTop: 10, fontSize: 13.5 }}>No issues match this view.</div>
+            <div className="mt-2.5 text-[13.5px]">No issues match this view.</div>
             {(filters.search || filters.issue_type_id || filters.department_id) && (
-              <BIB variant="ghost" size="sm" onClick={() => setFilters({ status: filters.status, issue_type_id: "", department_id: "", search: "", sort_by: "created_at", sort_order: "desc" })} style={{ marginTop: 12 }}>Clear filters</BIB>
+              <BIB variant="ghost" size="sm" onClick={() => setFilters({ status: filters.status, issue_type_id: "", department_id: "", search: "", sort_by: "created_at", sort_order: "desc" })} className="mt-3">Clear filters</BIB>
             )}
           </div>
         ) : issues.map(i => (
@@ -240,43 +249,37 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
 function IssueListCard({ issue, selected }) {
   return (
     <LkIB to={`/issues/${issue.id}`}>
-      <div style={{
-        display: "flex", gap: 11, padding: "12px 11px",
-        borderRadius: 11, marginBottom: 2, cursor: "pointer",
-        background: selected ? "#fff" : "transparent",
-        boxShadow: selected ? "0 1px 2px rgba(0,0,0,0.03), 0 0 0 1px rgba(0,0,0,0.06)" : "none",
-        transition: "background 120ms, box-shadow 120ms",
-      }}
-      onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "rgba(0,0,0,0.025)"; }}
-      onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}>
+      <div className={`flex gap-[11px] py-3 px-[11px] rounded-[11px] mb-0.5 cursor-pointer transition-[background-color,box-shadow] duration-120 ${
+        selected ? 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.06)]' : 'bg-transparent hover:bg-black/2.5'
+      }`}>
         <AvIB name={issue.name || "?"} size={36}/>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 6, alignItems: "baseline" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: TIB.text, letterSpacing: "-0.005em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{issue.name || "Unknown guest"}</div>
-            <div style={{ fontSize: 11.5, color: TIB.mutedLight, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{timeAgoIB(issue.created_at)}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between gap-1.5 items-baseline">
+            <div className="text-[13.5px] font-semibold text-text tracking-[-0.005em] whitespace-nowrap overflow-hidden text-ellipsis">{issue.name || "Unknown guest"}</div>
+            <div className="text-[11.5px] text-muted-light shrink-0 tabular-nums">{timeAgoIB(issue.created_at)}</div>
           </div>
-          <div style={{ fontSize: 12, color: TIB.muted, marginTop: 1 }}>
-            #{issue.id} · {issue.room_number || issue.location || "—"}
+          <div className="text-xs text-muted mt-px">
+            {issue.room_number || issue.location || "—"}
             {issue.departments?.[0] && ` · ${issue.departments[0].name}`}
           </div>
-          <div style={{
-            fontSize: 13, color: TIB.text, marginTop: 6, lineHeight: 1.35,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}>{issue.title}</div>
-          <div style={{ display: "flex", gap: 5, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="text-[13px] text-text mt-1.5 leading-[1.35] overflow-hidden [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
+            {issue.title}
+          </div>
+          <div className="flex gap-1.5 mt-2 items-center flex-wrap">
+            <PrIB value={issue.priority}/>
+            <StIB value={issue.status}/>
             {issue.issueTypes && issue.issueTypes.length > 0 ? (
-              issue.issueTypes.slice(0, 2).map((t, i) => (
-                <PIB key={t.id} color={TIB.purple} style={{ fontSize: 11 }}>{t.name}</PIB>
+              issue.issueTypes.slice(0, 2).map((t) => (
+                <PIB key={t.id} color={TIB.purple} className="text-xs">{t.name}</PIB>
               ))
             ) : (
-              <PIB color={TIB.muted} style={{ fontSize: 11 }}>—</PIB>
+              <PIB color={TIB.muted} className="text-xs">—</PIB>
             )}
             {issue.issueTypes && issue.issueTypes.length > 2 && (
-              <span style={{ fontSize: 10.5, color: TIB.accent, fontWeight: 500 }}>+{issue.issueTypes.length - 2}</span>
+              <span className="text-[10.5px] text-accent font-medium">+{issue.issueTypes.length - 2}</span>
             )}
-            <StIB value={issue.status}/>
             {issue.assignedTo && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: TIB.muted, marginLeft: 2 }}>
+              <span className="inline-flex items-center gap-1 text-[11.5px] text-muted ml-0.5">
                 <IIB name="user" size={10}/> {issue.assignedTo.name.split(" ")[0]}
               </span>
             )}
@@ -304,6 +307,21 @@ function IssueDetailPaneInbox({ id, onChange }) {
     setLoading(true);
     window.PulseAPI.Issues.get(id).then(r => { setIssue(r.data); setLoading(false); });
   }, [id]);
+
+  const close = useCallback(async () => {
+    if (!id) return;
+    await window.PulseAPI.Issues.close(id);
+    window.toast.success(`Issue #${id} closed`);
+    reload(); onChange?.();
+  }, [id, reload, onChange]);
+
+  const reopen = useCallback(async () => {
+    if (!id) return;
+    await window.PulseAPI.Issues.reopen(id);
+    window.toast.success(`Issue #${id} reopened`);
+    reload(); onChange?.();
+  }, [id, reload, onChange]);
+
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
   useEffect(() => {
     const h = (e) => { if (actionsRef.current && !actionsRef.current.contains(e.target)) setActionsOpen(false); };
@@ -311,31 +329,68 @@ function IssueDetailPaneInbox({ id, onChange }) {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  // Keyboard shortcuts for issue actions
+  useEffect(() => {
+    if (!id || !issue) return;
+
+    const handleCloseIssue = () => {
+      if (issue.status === 'open') {
+        close();
+      }
+    };
+
+    const handleReopenIssue = () => {
+      if (issue.status === 'closed') {
+        reopen();
+      }
+    };
+
+    const handleEditIssue = () => {
+      navIB(`/issues/${id}/edit`);
+    };
+
+    const handleAssignIssue = () => {
+      setAssignOpen(true);
+    };
+
+    const handleAddComment = () => {
+      // Focus the comment textarea
+      const commentInput = document.querySelector('textarea[placeholder*="comment"]');
+      if (commentInput) {
+        commentInput.focus();
+      }
+    };
+
+    window.addEventListener('gp:issue:close', handleCloseIssue);
+    window.addEventListener('gp:issue:reopen', handleReopenIssue);
+    window.addEventListener('gp:issue:edit', handleEditIssue);
+    window.addEventListener('gp:issue:assign', handleAssignIssue);
+    window.addEventListener('gp:issue:comment', handleAddComment);
+
+    return () => {
+      window.removeEventListener('gp:issue:close', handleCloseIssue);
+      window.removeEventListener('gp:issue:reopen', handleReopenIssue);
+      window.removeEventListener('gp:issue:edit', handleEditIssue);
+      window.removeEventListener('gp:issue:assign', handleAssignIssue);
+      window.removeEventListener('gp:issue:comment', handleAddComment);
+    };
+  }, [id, issue, close, reopen]);
+
   if (!id) {
     return (
-      <div style={{ flex: 1, display: "grid", placeItems: "center", color: TIB.mutedLight, fontSize: 14, background: "#fafafa" }}>
-        <div style={{ textAlign: "center" }}>
+      <div className="flex-1 grid place-items-center text-muted-light text-sm bg-bg-soft">
+        <div className="text-center">
           <IIB name="inbox" size={40} color="#d2d2d7"/>
-          <div style={{ marginTop: 12 }}>Select an issue to view details</div>
+          <div className="mt-3">Select an issue to view details</div>
         </div>
       </div>
     );
   }
 
   if (loading || !issue) {
-    return <div style={{ flex: 1, padding: 32, background: "#fafafa" }}><SIB width={240} height={28}/><SIB width={420} height={16} style={{ marginTop: 10 }}/><SIB height={160} style={{ marginTop: 20 }}/></div>;
+    return <div className="flex-1 p-8 bg-bg-soft"><SIB width={240} height={28}/><SIB width={420} height={16} className="mt-2.5"/><SIB height={160} className="mt-5"/></div>;
   }
 
-  const close = async () => {
-    await window.PulseAPI.Issues.close(id);
-    window.toast.success(`Issue #${id} closed`);
-    reload(); onChange?.();
-  };
-  const reopen = async () => {
-    await window.PulseAPI.Issues.reopen(id);
-    window.toast.success(`Issue #${id} reopened`);
-    reload(); onChange?.();
-  };
   const postComment = async () => {
     if (!comment.trim()) return;
     await window.PulseAPI.Comments.create({ issue_id: id, body: comment.trim() });
@@ -351,44 +406,34 @@ function IssueDetailPaneInbox({ id, onChange }) {
   };
 
   return (
-    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "#fafafa", display: "flex", flexDirection: "column" }}>
+    <div className="flex-1 min-w-0 overflow-y-auto bg-bg-soft flex flex-col">
       {/* Sticky toolbar */}
-      <div style={{
-        position: "sticky", top: 0, zIndex: 10,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "12px 28px", borderBottom: "1px solid rgba(0,0,0,0.06)",
-        background: "rgba(250,250,250,0.92)", backdropFilter: "saturate(180%) blur(20px)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12.5, color: TIB.mutedLight, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>#{issue.id}</span>
-          <span style={{ color: "#d2d2d7" }}>·</span>
+      <div className="sticky top-0 z-10 flex items-center justify-between px-7 py-3 border-b border-black/6 bg-[rgba(250,250,250,0.92)] backdrop-saturate-180 backdrop-blur-[20px]">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[12.5px] text-muted-light tabular-nums font-medium">#{issue.id}</span>
+          <span className="text-[#d2d2d7]">·</span>
           <StIB value={issue.status}/>
           {issue.issueTypes && issue.issueTypes.length > 0 ? (
             issue.issueTypes.slice(0, 2).map((t) => (
-              <PIB key={t.id} color={TIB.purple} style={{ fontSize: 11 }}>{t.name}</PIB>
+              <PIB key={t.id} color={TIB.purple} className="text-xs">{t.name}</PIB>
             ))
           ) : (
-            <PIB color={TIB.muted} style={{ fontSize: 11 }}>—</PIB>
+            <PIB color={TIB.muted} className="text-xs">—</PIB>
           )}
           {issue.issueTypes && issue.issueTypes.length > 2 && (
-            <span style={{ fontSize: 10.5, color: TIB.accent, fontWeight: 500 }}>+{issue.issueTypes.length - 2}</span>
+            <span className="text-[10.5px] text-accent font-medium">+{issue.issueTypes.length - 2}</span>
           )}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="flex gap-1.5 items-center">
           <BIB variant="ghost" size="sm" icon="user" onClick={() => setAssignOpen(true)}>{issue.assignedTo ? "Reassign" : "Assign"}</BIB>
           {issue.status === "open"
             ? <BIB variant="success" size="sm" icon="check" onClick={close}>Close</BIB>
             : <BIB variant="outline" size="sm" icon="refresh" onClick={reopen}>Reopen</BIB>
           }
-          <div ref={actionsRef} style={{ position: "relative" }}>
+          <div ref={actionsRef} className="relative">
             <IBIB icon="more" onClick={() => setActionsOpen(o => !o)} size={30}/>
             {actionsOpen && (
-              <div style={{
-                position: "absolute", right: 0, top: 36, zIndex: 50, minWidth: 180,
-                background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
-                borderRadius: 10, padding: 4,
-                boxShadow: "0 10px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
-              }}>
+              <div className="absolute right-0 top-9 z-50 min-w-[180px] bg-[rgba(255,255,255,0.98)] backdrop-blur-[20px] rounded-xl p-1 shadow-[0_10px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)]">
                 <DiIB icon="edit" label="Edit issue" onClick={() => { navIB(`/issues/${id}/edit`); setActionsOpen(false); }}/>
                 <DiIB icon="download" label="Export PDF" onClick={() => setActionsOpen(false)}/>
                 <DdvIB/>
@@ -399,14 +444,14 @@ function IssueDetailPaneInbox({ id, onChange }) {
         </div>
       </div>
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 32px 60px", width: "100%" }}>
+      <div className="max-w-[760px] mx-auto px-8 pb-[60px] pt-7 w-full">
         {/* Title + meta */}
-        <div style={{ marginBottom: 22 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", margin: 0, lineHeight: 1.25 }}>{issue.title}</h1>
-          <div style={{ fontSize: 13, color: TIB.muted, marginTop: 8, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        <div className="mb-5.5">
+          <h1 className="text-2xl font-semibold tracking-[-0.02em] m-0 leading-tight">{issue.title}</h1>
+          <div className="text-sm text-muted mt-2 flex flex-wrap gap-2.5 items-center">
             {issue.issueTypes && issue.issueTypes.length > 0 && (
               <>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span className="inline-flex items-center gap-1.25">
                   <IIB name="tag" size={13} color={TIB.mutedLight}/>
                   {issue.issueTypes.slice(0, 2).map((t, i) => (
                     <span key={t.id}>{i > 0 && ", "}{t.name}</span>
@@ -422,12 +467,12 @@ function IssueDetailPaneInbox({ id, onChange }) {
         </div>
 
         {/* Guest card */}
-        <CIB style={{ marginBottom: 14 }}>
-          <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+        <CIB className="mb-3.5">
+          <div className="px-5 py-4 flex items-center gap-3.5">
             <AvIB name={issue.name || "?"} size={44}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>{issue.name || "Guest"}</div>
-              <div style={{ fontSize: 12.5, color: TIB.muted, marginTop: 3 }}>
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-semibold tracking-[-0.01em]">{issue.name || "Guest"}</div>
+              <div className="text-[12.5px] text-muted mt-0.75">
                 {issue.room_number || issue.location || "—"}
                 {issue.checkin_date && issue.checkout_date && ` · ${fmtDateShortIB(issue.checkin_date)} → ${fmtDateShortIB(issue.checkout_date)}`}
                 {issue.nationality && ` · ${issue.nationality}`}
@@ -438,57 +483,53 @@ function IssueDetailPaneInbox({ id, onChange }) {
         </CIB>
 
         {/* Assignment + departments */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 22 }}>
+        <div className="grid grid-cols-2 gap-3 mb-5.5">
           <CIB>
-            <div style={{ padding: "14px 18px" }}>
-              <div style={{ fontSize: 11, color: TIB.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Assigned to</div>
+            <div className="px-[18px] py-[14px]">
+              <div className="text-xs text-muted-light font-semibold uppercase tracking-wider mb-2">Assigned to</div>
               {issue.assignedTo ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <div className="flex items-center gap-2.25">
                   <AvIB name={issue.assignedTo.name} size={26}/>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{issue.assignedTo.name}</div>
-                    {issue.assignedTo.department && <div style={{ fontSize: 11.5, color: TIB.mutedLight, marginTop: 1 }}>{issue.assignedTo.department}</div>}
+                  <div className="min-w-0">
+                    <div className="text-[13.5px] font-medium whitespace-nowrap overflow-hidden text-ellipsis">{issue.assignedTo.name}</div>
+                    {issue.assignedTo.department && <div className="text-[11.5px] text-muted-light mt-0.25">{issue.assignedTo.department}</div>}
                   </div>
                 </div>
               ) : (
-                <button onClick={() => setAssignOpen(true)} style={{ background: "none", border: "none", color: TIB.accent, fontSize: 13, cursor: "pointer", fontWeight: 500, padding: 0 }}>+ Assign user</button>
+                <button onClick={() => setAssignOpen(true)} className="bg-none border-none text-accent text-sm cursor-pointer font-medium p-0">+ Assign user</button>
               )}
             </div>
           </CIB>
           <CIB>
-            <div style={{ padding: "14px 18px" }}>
-              <div style={{ fontSize: 11, color: TIB.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Departments</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                {issue.departments?.length ? issue.departments.map(d => <PIB key={d.id} color={TIB.muted}>{d.name}</PIB>) : <span style={{ fontSize: 12.5, color: TIB.mutedLight, fontStyle: "italic" }}>None set</span>}
+            <div className="px-[18px] py-[14px]">
+              <div className="text-xs text-muted-light font-semibold uppercase tracking-wider mb-2">Departments</div>
+              <div className="flex flex-wrap gap-1">
+                {issue.departments?.length ? issue.departments.map(d => <PIB key={d.id} color={TIB.muted}>{d.name}</PIB>) : <span className="text-[12.5px] text-muted-light italic">None set</span>}
               </div>
             </div>
           </CIB>
         </div>
 
         {/* Description */}
-        <div style={{ marginBottom: 28 }}>
+        <div className="mb-7">
           <SectionTitleIB>Description</SectionTitleIB>
-          <div style={{ fontSize: 14.5, lineHeight: 1.6, color: TIB.text, whiteSpace: "pre-wrap" }}>
-            {issue.description || <span style={{ color: TIB.mutedLight, fontStyle: "italic" }}>No description.</span>}
+          <div className="text-[14.5px] leading-1.6 text-text whitespace-pre-wrap">
+            {issue.description || <span className="text-muted-light italic">No description.</span>}
           </div>
         </div>
 
         {/* Recovery */}
         {issue.recovery && (
-          <div style={{ marginBottom: 28 }}>
+          <div className="mb-7">
             <SectionTitleIB>Recovery / resolution</SectionTitleIB>
-            <div style={{
-              background: "rgba(52,199,89,0.06)", border: "1px solid rgba(52,199,89,0.2)",
-              borderRadius: 12, padding: "14px 16px",
-              display: "flex", gap: 12, alignItems: "flex-start",
-            }}>
-              <div style={{ width: 28, height: 28, borderRadius: 28, background: TIB.success, display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <div className="bg-success/6 border border-success/20 rounded-xl px-4 py-[14px] flex gap-3 items-start">
+              <div className="w-7 h-7 rounded-full bg-success grid place-items-center shrink-0">
                 <IIB name="gift" size={14} color="#fff" strokeWidth={2}/>
               </div>
-              <div style={{ flex: 1, fontSize: 14, lineHeight: 1.55, color: TIB.text }}>
+              <div className="flex-1 text-sm leading-[1.55] text-text">
                 {issue.recovery}
                 {issue.recovery_cost > 0 && (
-                  <div style={{ marginTop: 4, fontSize: 12.5, color: TIB.muted }}>Cost: IDR {issue.recovery_cost.toLocaleString()}</div>
+                  <div className="mt-1 text-[12.5px] text-muted">Cost: IDR {issue.recovery_cost.toLocaleString()}</div>
                 )}
               </div>
             </div>
@@ -496,10 +537,10 @@ function IssueDetailPaneInbox({ id, onChange }) {
         )}
 
         {/* Comments timeline */}
-        <div style={{ marginBottom: 24 }}>
+        <div className="mb-6">
           <SectionTitleIB>Activity</SectionTitleIB>
-          <div style={{ position: "relative", paddingLeft: 14 }}>
-            <div style={{ position: "absolute", left: 14, top: 6, bottom: 6, width: 1, background: "rgba(0,0,0,0.08)" }}/>
+          <div className="relative pl-3.5">
+            <div className="absolute left-3.5 top-1.5 bottom-1.5 w-px bg-black/8"/>
             <TimelineEntryIB icon="plus" color={TIB.accent} actor={issue.createdBy?.name || "System"} at={issue.created_at} text="Issue opened."/>
             {(issue.comments || []).map(c => (
               <TimelineEntryIB key={c.id} icon="edit" color={TIB.muted} actor={c.user.name} at={c.created_at} text={c.body}/>
@@ -513,18 +554,14 @@ function IssueDetailPaneInbox({ id, onChange }) {
         {/* Add note */}
         {issue.status === "open" && (
           <CIB>
-            <div style={{ padding: "14px 16px" }}>
+            <div className="px-4 py-[14px]">
               <textarea
                 value={comment} onChange={(e) => setComment(e.target.value)}
                 placeholder="Add an internal note or update…" rows={2}
-                style={{
-                  width: "100%", border: "none", outline: "none", resize: "none",
-                  fontFamily: "inherit", fontSize: 14, color: TIB.text, letterSpacing: "-0.003em",
-                  background: "transparent", lineHeight: 1.5, padding: 0,
-                }}
+                className="w-full border-none outline-none resize-none font-inherit text-sm text-text tracking-[-0.003em] bg-transparent leading-1.5 p-0"
               />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                <div style={{ display: "flex", gap: 4 }}>
+              <div className="flex justify-between items-center mt-2">
+                <div className="flex gap-1">
                   <IBIB icon="paperclip" size={26}/>
                   <IBIB icon="image" size={26}/>
                 </div>
@@ -543,26 +580,21 @@ function IssueDetailPaneInbox({ id, onChange }) {
 }
 
 function SectionTitleIB({ children }) {
-  return <div style={{ fontSize: 11.5, color: TIB.mutedLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px 0" }}>{children}</div>;
+  return <div className="text-[11.5px] text-muted-light font-semibold uppercase tracking-[0.06em] my-0 mx-0 mb-3">{children}</div>;
 }
 
 function TimelineEntryIB({ icon, color, actor, at, text }) {
   return (
-    <div style={{ position: "relative", paddingLeft: 28, paddingBottom: 18 }}>
-      <div style={{
-        position: "absolute", left: -8, top: 1, width: 22, height: 22, borderRadius: 22,
-        background: color, color: "#fff",
-        display: "grid", placeItems: "center",
-        boxShadow: "0 0 0 4px #fafafa",
-      }}>
+    <div className="relative pl-7 pb-4.5">
+      <div className="absolute left-[-8px] top-0.25 w-[22px] h-[22px] rounded-[22px] grid place-items-center shadow-[0_0_0_4px_#fafafa]" style={{ background: color }}>
         <IIB name={icon} size={11} color="#fff" strokeWidth={2.4}/>
       </div>
       <div>
-        <div style={{ fontSize: 13, color: TIB.text, lineHeight: 1.45 }}>
-          <span style={{ fontWeight: 600 }}>{actor}</span>
-          <span style={{ color: TIB.muted }}> · {timeAgoIB(at)}</span>
+        <div className="text-sm text-text leading-1.45">
+          <span className="font-semibold">{actor}</span>
+          <span className="text-muted"> · {timeAgoIB(at)}</span>
         </div>
-        <div style={{ fontSize: 14, color: "#3a3a3c", marginTop: 3, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{text}</div>
+        <div className="text-sm text-text-secondary mt-0.75 leading-1.5 whitespace-pre-wrap">{text}</div>
       </div>
     </div>
   );
@@ -589,33 +621,23 @@ function AssignModalIB({ onClose, onAssign, current }) {
   const filtered = users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <MdIB title="Assign issue" onClose={onClose} width={400} padding={false}>
-      <div style={{ padding: 12 }}>
+      <div className="p-3">
         <InIB value={q} onChange={setQ} icon="search" placeholder="Search users…" autoFocus/>
       </div>
-      <div style={{ maxHeight: 360, overflowY: "auto", padding: "0 6px 12px" }}>
-        <button onClick={() => onAssign(null)} style={{
-          display: "flex", width: "100%", padding: "8px 10px", border: "none",
-          background: !current ? "rgba(0,122,255,0.08)" : "transparent",
-          cursor: "pointer", alignItems: "center", gap: 10, borderRadius: 8, fontFamily: "inherit", textAlign: "left",
-        }}>
-          <div style={{ width: 28, height: 28, borderRadius: 28, background: "#f2f2f5", display: "grid", placeItems: "center" }}>
+      <div className="max-h-[360px] overflow-y-auto px-1.5 pb-3">
+        <button onClick={() => onAssign(null)} className={`flex w-full px-2.5 py-2 border-none cursor-pointer items-center gap-2.5 rounded-lg font-inherit text-left ${!current ? 'bg-accent/8' : 'bg-transparent hover:bg-black/4'}`}>
+          <div className="w-7 h-7 rounded-full bg-[#f2f2f5] grid place-items-center">
             <IIB name="x" size={13} color={TIB.muted}/>
           </div>
-          <span style={{ fontSize: 13.5, color: TIB.muted, flex: 1 }}>Unassigned</span>
+          <span className="text-[13.5px] text-muted flex-1">Unassigned</span>
           {!current && <IIB name="check" size={14} color={TIB.accent}/>}
         </button>
         {filtered.map(u => (
-          <button key={u.id} onClick={() => onAssign(u.id)} style={{
-            display: "flex", width: "100%", padding: "8px 10px", border: "none",
-            background: u.id === current ? "rgba(0,122,255,0.08)" : "transparent",
-            cursor: "pointer", alignItems: "center", gap: 10, borderRadius: 8, fontFamily: "inherit", textAlign: "left",
-          }}
-          onMouseEnter={(e) => { if (u.id !== current) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
-          onMouseLeave={(e) => { if (u.id !== current) e.currentTarget.style.background = "transparent"; }}>
+          <button key={u.id} onClick={() => onAssign(u.id)} className={`flex w-full px-2.5 py-2 border-none cursor-pointer items-center gap-2.5 rounded-lg font-inherit text-left ${u.id === current ? 'bg-accent/8' : 'bg-transparent hover:bg-black/4'}`}>
             <AvIB name={u.name} size={28}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, color: TIB.text, fontWeight: 500 }}>{u.name}</div>
-              <div style={{ fontSize: 12, color: TIB.mutedLight }}>{u.roles?.[0]?.name} {u.department && `· ${u.department}`}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] text-text font-medium">{u.name}</div>
+              <div className="text-xs text-muted-light">{u.roles?.[0]?.name} {u.department && `· ${u.department}`}</div>
             </div>
             {u.id === current && <IIB name="check" size={14} color={TIB.accent}/>}
           </button>
