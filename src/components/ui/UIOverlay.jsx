@@ -34,7 +34,7 @@ function Modal({ children, onClose, title, width = 480, footer, padding = true, 
     <div
       onClick={onClose}
       className={cxO(
-        "fixed inset-0 z-[200] grid place-items-center p-5",
+        "fixed inset-0 z-200 grid place-items-center p-5",
         "bg-black/32 backdrop-blur-sm",
         "animate-gp-fade",
         className,
@@ -52,7 +52,7 @@ function Modal({ children, onClose, title, width = 480, footer, padding = true, 
         }}
       >
         {title && (
-          <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/[.06]">
+          <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/6">
             <div className="text-base font-semibold tracking-tighter">{title}</div>
             <IconBtnO icon="x" onClick={onClose} size={28}/>
           </div>
@@ -61,7 +61,7 @@ function Modal({ children, onClose, title, width = 480, footer, padding = true, 
           {children}
         </div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-[22px] py-3 border-t border-black/[.06] bg-black/[.015]">
+          <div className="flex items-center justify-end gap-2 px-[22px] py-3 border-t border-black/6 bg-black/1.5">
             {footer}
           </div>
         )}
@@ -82,10 +82,10 @@ function Drawer({ children, onClose, title, width = 480, open, footer, className
 
   return (
     <>
-      {open && <div onClick={onClose} className="fixed inset-0 z-[150] bg-black/32 backdrop-blur-sm animate-gp-fade" style={{ animationDuration: "200ms" }}/>}
+      {open && <div onClick={onClose} className="fixed inset-0 z-150 bg-black/32 backdrop-blur-sm animate-gp-fade" style={{ animationDuration: "200ms" }}/>}
       <div
         className={cxO(
-          "fixed top-0 right-0 bottom-0 z-[160] bg-white flex flex-col",
+          "fixed top-0 right-0 bottom-0 z-160 bg-white flex flex-col",
           className,
         )}
         style={{
@@ -97,14 +97,14 @@ function Drawer({ children, onClose, title, width = 480, open, footer, className
         }}
       >
         {title && (
-          <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/[.06]">
+          <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/6">
             <div className="text-base font-semibold tracking-tighter">{title}</div>
             <IconBtnO icon="x" onClick={onClose} size={28}/>
           </div>
         )}
         <div className="flex-1 overflow-y-auto px-[22px] py-[18px]">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-[22px] py-3 border-t border-black/[.06]">
+          <div className="flex items-center justify-end gap-2 px-[22px] py-3 border-t border-black/6">
             {footer}
           </div>
         )}
@@ -131,8 +131,8 @@ function Dropdown({ trigger, children, align = "right", width = 200, className }
       {open && (
         <div
           className={cxO(
-            "absolute z-[60] p-1 rounded-xl",
-            "bg-white/98 backdrop-blur-md border border-black/[.06]",
+            "absolute z-60 p-1 rounded-xl",
+            "bg-white/98 backdrop-blur-md border border-black/6",
             alignClass,
           )}
           style={{
@@ -185,7 +185,7 @@ function DropdownItem({ icon, label, onClick, onSelect, danger, active, shortcut
 }
 
 function DropdownDivider() {
-  return <div className="h-px bg-black/[.06] my-1 mx-1.5"/>;
+  return <div className="h-px bg-black/6 my-1 mx-1.5"/>;
 }
 
 // ---- Toast / Notify --------------------------------------------------------
@@ -215,7 +215,7 @@ function ToastHost() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-4 right-4 z-9999 flex flex-col gap-2 pointer-events-none">
       {items.map(t => {
         const m = meta[t.kind] || meta.info;
         return (
@@ -223,7 +223,7 @@ function ToastHost() {
             key={t.id}
             className={cxO(
               "flex items-center gap-2.5 px-4 py-3",
-              "bg-white/98 backdrop-blur-xl border border-black/[.06] rounded-xl",
+              "bg-white/98 backdrop-blur-xl border border-black/6 rounded-xl",
               "shadow-lg text-text pointer-events-auto min-w-60 max-w-80",
               "animate-gp-slide-in",
             )}

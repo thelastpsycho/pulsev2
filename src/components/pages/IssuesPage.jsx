@@ -701,6 +701,7 @@ function IssueFormPage({ id }) {
     source: "", nationality: "", contact: "",
     priority: "medium", department_ids: [], issue_type_ids: [],
     assigned_to_user_id: null,
+    recovery: "", recovery_cost: "",
   });
   const [errors, setErrors] = useState({});
   const [departments, setDepartments] = useState([]);
@@ -721,6 +722,7 @@ function IssueFormPage({ id }) {
           department_ids: i.departments?.map(d => d.id) || [],
           issue_type_ids: i.issueTypes?.map(t => t.id) || [],
           assigned_to_user_id: i.assigned_to_user_id,
+          recovery: i.recovery || "", recovery_cost: i.recovery_cost || "",
         });
         setLoading(false);
       }).catch(err => {
@@ -797,6 +799,12 @@ function IssueFormPage({ id }) {
           <FI label="Description" hint="What did the guest report? Times, severity, any context.">
             <TaI value={form.description} onChange={v => set("description", v)} rows={5} placeholder="Detailed description…"/>
           </FI>
+          <FI label="Recovery / Resolution" hint="What was done to resolve the issue? Compensation offered?">
+            <TaI value={form.recovery} onChange={v => set("recovery", v)} rows={4} placeholder="Actions taken, guest compensation, resolution details…"/>
+          </FI>
+          <FI label="Recovery Cost (IDR)" hint="Optional. Total compensation cost in Indonesian Rupiah.">
+            <InI value={form.recovery_cost} onChange={v => set("recovery_cost", v)} type="number" placeholder="0" min="0"/>
+          </FI>
           <div className="grid grid-cols-2 gap-3">
             <FI label="Departments" hint="Choose one or more">
               <MsI value={form.department_ids} onChange={v => set("department_ids", v)} options={departments.map(d => ({ value: d.id, label: d.name }))}/>
@@ -813,14 +821,15 @@ function IssueFormPage({ id }) {
             <FI label="Source"><InI value={form.source} onChange={v => set("source", v)} placeholder="Booking.com, Agoda, etc."/></FI>
           </div>
           <div className="grid grid-cols-[2fr_1fr] gap-3">
-            <FI label="Check-in / Check-out">
-              <window.DateRangePicker
-                checkinDate={form.checkin_date}
-                checkoutDate={form.checkout_date}
-                onChange={({ checkin_date, checkout_date }) => {
-                  set("checkin_date", checkin_date);
-                  set("checkout_date", checkout_date);
+            <FI label="Guest Stay" hint="Check-in and check-out dates (optional)">
+              <window.RangeDatePicker
+                defaultStartDate={form.checkin_date ? new Date(form.checkin_date) : null}
+                defaultEndDate={form.checkout_date ? new Date(form.checkout_date) : null}
+                onDateChange={(start, end) => {
+                  set("checkin_date", start ? start.toISOString().split('T')[0] : "");
+                  set("checkout_date", end ? end.toISOString().split('T')[0] : "");
                 }}
+                placeholder="Select check-in and check-out dates"
               />
             </FI>
             <FI label="Issue date" required><InI value={form.issue_date} onChange={v => set("issue_date", v)} type="date"/></FI>

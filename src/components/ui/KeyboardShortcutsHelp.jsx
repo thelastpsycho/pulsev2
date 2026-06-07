@@ -43,22 +43,23 @@ function KeyboardShortcutsHelp() {
         { key: '⌘+A', description: 'Select all issues' },
       ]
     },
-    {
-      category: 'Issue Actions',
-      items: [
-        { key: 'C', description: 'Close current issue' },
-        { key: 'R', description: 'Reopen issue' },
-        { key: 'E', description: 'Edit current issue' },
-        { key: 'A', description: 'Assign issue' },
-        { key: 'N', description: 'Add comment' },
-      ]
-    },
+    // Issue Actions disabled - no longer using keyboard shortcuts for these
+    // {
+    //   category: 'Issue Actions',
+    //   items: [
+    //     { key: 'C', description: 'Close current issue' },
+    //     { key: 'R', description: 'Reopen issue' },
+    //     { key: 'E', description: 'Edit current issue' },
+    //     { key: 'A', description: 'Assign issue' },
+    //     { key: 'N', description: 'Add comment' },
+    //   ]
+    // },
   ];
 
   return (
     <div
       onClick={handleClose}
-      className="fixed inset-0 z-[200] grid place-items-center p-5 bg-black/32 backdrop-blur-sm animate-gp-fade"
+      className="fixed inset-0 z-200 grid place-items-center p-5 bg-black/32 backdrop-blur-sm animate-gp-fade"
       style={{ animationDuration: "160ms" }}
     >
       <div
@@ -71,11 +72,11 @@ function KeyboardShortcutsHelp() {
           animation: "gp-scale 200ms cubic-bezier(.2,.7,.2,1)",
         }}
       >
-        <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/[.06]">
+        <div className="flex items-center justify-between px-[22px] py-4 border-b border-black/6">
           <div className="text-base font-semibold tracking-tighter">Keyboard Shortcuts</div>
           <button
             onClick={handleClose}
-            className="bg-transparent border-none p-1 cursor-pointer rounded-lg hover:bg-black/[.04]"
+            className="bg-transparent border-none p-1 cursor-pointer rounded-lg hover:bg-black/4"
           >
             ✕
           </button>
@@ -89,9 +90,9 @@ function KeyboardShortcutsHelp() {
                 </h3>
                 <div className="space-y-2">
                   {section.items.map((shortcut) => (
-                    <div key={shortcut.key} className="flex items-center justify-between py-2 border-b border-black/[.06]">
+                    <div key={shortcut.key} className="flex items-center justify-between py-2 border-b border-black/6">
                       <span className="text-sm text-text">{shortcut.description}</span>
-                      <kbd className="px-2 py-1 text-xs font-semibold text-text bg-black/[.08] rounded min-w-[60px] text-center">
+                      <kbd className="px-2 py-1 text-xs font-semibold text-text bg-black/8 rounded min-w-[60px] text-center">
                         {shortcut.key}
                       </kbd>
                     </div>
@@ -100,9 +101,9 @@ function KeyboardShortcutsHelp() {
               </div>
             ))}
 
-            <div className="pt-4 border-t border-black/[.06]">
+            <div className="pt-4 border-t border-black/6">
               <p className="text-xs text-muted-light text-center">
-                Tip: Press <kbd className="px-1 py-0.5 text-xs bg-black/[.08] rounded">/</kbd> anytime to see this help
+                Tip: Press <kbd className="px-1 py-0.5 text-xs bg-black/8 rounded">/</kbd> anytime to see this help
               </p>
             </div>
           </div>

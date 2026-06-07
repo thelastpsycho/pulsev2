@@ -170,36 +170,36 @@ function initKeyboardShortcuts() {
     condition: () => window.location.hash === '#/issues' || window.location.hash === '#/issues/',
   });
 
-  // Issue detail actions
-  register({
-    key: 'c',
-    description: 'Close current issue',
-    action: () => {
-      window.dispatchEvent(new CustomEvent('gp:issue:close'));
-    },
-    category: 'actions',
-    condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
-  });
+  // Issue detail actions - DISABLED
+  // register({
+  //   key: 'c',
+  //   description: 'Close current issue',
+  //   action: () => {
+  //     window.dispatchEvent(new CustomEvent('gp:issue:close'));
+  //   },
+  //   category: 'actions',
+  //   condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
+  // });
 
-  register({
-    key: 'r',
-    description: 'Reopen issue',
-    action: () => {
-      window.dispatchEvent(new CustomEvent('gp:issue:reopen'));
-    },
-    category: 'actions',
-    condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
-  });
+  // register({
+  //   key: 'r',
+  //   description: 'Reopen issue',
+  //   action: () => {
+  //     window.dispatchEvent(new CustomEvent('gp:issue:reopen'));
+  //   },
+  //   category: 'actions',
+  //   condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
+  // });
 
-  register({
-    key: 'e',
-    description: 'Edit current issue',
-    action: () => {
-      window.dispatchEvent(new CustomEvent('gp:issue:edit'));
-    },
-    category: 'actions',
-    condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
-  });
+  // register({
+  //   key: 'e',
+  //   description: 'Edit current issue',
+  //   action: () => {
+  //     window.dispatchEvent(new CustomEvent('gp:issue:edit'));
+  //   },
+  //   category: 'actions',
+  //   condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
+  // });
 
   console.log('[Shortcuts] System initialized');
 

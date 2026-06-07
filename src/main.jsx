@@ -10,6 +10,7 @@ import './components/ui/UIPrimitives.jsx'
 import './components/ui/UIForm.jsx'
 import './components/ui/UIOverlay.jsx'
 import './components/ui/DateRangePicker.jsx'
+import './components/ui/RangeDatePicker.jsx'
 
 // New UI Components
 import './components/ui/GlobalSearch.jsx'

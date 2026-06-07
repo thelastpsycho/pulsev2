@@ -143,17 +143,17 @@ export function InteractiveChart({
   };
 
   return (
-    <div className={cx('bg-white rounded-xl border border-black/[.06] overflow-hidden', className)}>
+    <div className={cx('bg-white rounded-xl border border-black/6 overflow-hidden', className)}>
       {/* Header */}
       {(title || subtitle) && (
-        <div className="px-[22px] pt-4 pb-3 border-b border-black/[.05] flex items-center justify-between">
+        <div className="px-[22px] pt-4 pb-3 border-b border-black/5 flex items-center justify-between">
           <div>
             {title && <div className="text-[14.5px] font-semibold tracking-tightish">{title}</div>}
             {subtitle && <div className="text-[12.5px] text-muted-light mt-0.5">{subtitle}</div>}
           </div>
           <button
             onClick={exportChart}
-            className="p-2 rounded-lg hover:bg-black/[.04] transition-colors"
+            className="p-2 rounded-lg hover:bg-black/4 transition-colors"
             title="Export as PNG"
           >
             <Icon name="download" size={16} color={TOKENS.mutedLight} />
@@ -174,7 +174,7 @@ export function InteractiveChart({
               className={cx(
                 'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all duration-100',
                 isVisible ? 'opacity-100' : 'opacity-40',
-                isActive && 'bg-black/[.04]'
+                isActive && 'bg-black/4'
               )}
             >
               <div
@@ -194,7 +194,7 @@ export function InteractiveChart({
               onClick={() => {/* Toggle comparison - would update parent state */}}
               className={cx(
                 'px-2 py-1 rounded-md text-xs font-medium transition-all duration-100',
-                showComparison ? 'bg-accent/10 text-accent' : 'bg-black/[.04] text-muted-light'
+                showComparison ? 'bg-accent/10 text-accent' : 'bg-black/4 text-muted-light'
               )}
             >
               {showComparison ? 'On' : 'Off'}
@@ -426,7 +426,7 @@ export function PeriodComparisonToggle({
             'px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-100',
             value === option.value
               ? 'bg-accent text-white'
-              : 'bg-black/[.04] text-muted-light hover:bg-black/[.08]'
+              : 'bg-black/4 text-muted-light hover:bg-black/8'
           )}
         >
           {option.label}

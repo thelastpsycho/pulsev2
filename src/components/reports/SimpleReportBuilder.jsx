@@ -186,7 +186,7 @@ function SimpleReportBuilder() {
         {/* Main Builder Area */}
         <div className="space-y-4">
           {/* Report Name */}
-          <div className="bg-white rounded-xl border border-black/[.06] overflow-hidden">
+          <div className="bg-white rounded-xl border border-black/6 overflow-hidden">
             <div className="p-4">
               <label className="block text-xs font-semibold text-muted-light uppercase tracking-wider mb-2">
                 Report Name
@@ -202,8 +202,8 @@ function SimpleReportBuilder() {
           </div>
 
           {/* Available Fields */}
-          <div className="bg-white rounded-xl border border-black/[.06] overflow-hidden">
-            <div className="p-4 border-b border-black/[.05]">
+          <div className="bg-white rounded-xl border border-black/6 overflow-hidden">
+            <div className="p-4 border-b border-black/5">
               <h3 className="text-sm font-semibold">Available Fields</h3>
               <p className="text-xs text-muted-light mt-1">Click to add fields to your report</p>
             </div>
@@ -222,7 +222,7 @@ function SimpleReportBuilder() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-all duration-100 ${
                             selectedFields.has(field.id)
                               ? 'bg-accent/10 text-accent cursor-not-allowed opacity-50'
-                              : 'bg-black/[.04] hover:bg-black/[.08] text-text cursor-pointer'
+                              : 'bg-black/4 hover:bg-black/8 text-text cursor-pointer'
                           }`}
                         >
                           <span className="text-xs font-medium">{field.label}</span>
@@ -237,8 +237,8 @@ function SimpleReportBuilder() {
 
           {/* Selected Fields */}
           {selectedFields.size > 0 && (
-            <div className="bg-white rounded-xl border border-black/[.06] overflow-hidden">
-              <div className="p-4 border-b border-black/[.05]">
+            <div className="bg-white rounded-xl border border-black/6 overflow-hidden">
+              <div className="p-4 border-b border-black/5">
                 <h3 className="text-sm font-semibold">Selected Fields ({selectedFields.size})</h3>
                 <p className="text-xs text-muted-light mt-1">These fields will appear in your report</p>
               </div>
@@ -246,7 +246,7 @@ function SimpleReportBuilder() {
                 {config.fields.map((field) => (
                   <div
                     key={field.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-black/[.04] rounded-lg group"
+                    className="flex items-center gap-2 px-3 py-2 bg-black/4 rounded-lg group"
                   >
                     <div className="flex-1">
                       <span className="text-sm font-medium">{field.label}</span>
@@ -254,7 +254,7 @@ function SimpleReportBuilder() {
                     </div>
                     <button
                       onClick={() => toggleField(field.id)}
-                      className="p-1 rounded hover:bg-black/[.08] opacity-0 group-hover:opacity-100"
+                      className="p-1 rounded hover:bg-black/8 opacity-0 group-hover:opacity-100"
                     >
                       <span className="text-xs text-muted-light">×</span>
                     </button>
@@ -268,8 +268,8 @@ function SimpleReportBuilder() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Export Options */}
-          <div className="bg-white rounded-xl border border-black/[.06] overflow-hidden">
-            <div className="p-4 border-b border-black/[.05]">
+          <div className="bg-white rounded-xl border border-black/6 overflow-hidden">
+            <div className="p-4 border-b border-black/5">
               <h3 className="text-sm font-semibold">Export Options</h3>
             </div>
             <div className="p-4 space-y-3">
@@ -295,8 +295,8 @@ function SimpleReportBuilder() {
           </div>
 
           {/* Group By */}
-          <div className="bg-white rounded-xl border border-black/[.06] overflow-hidden">
-            <div className="p-4 border-b border-black/[.05]">
+          <div className="bg-white rounded-xl border border-black/6 overflow-hidden">
+            <div className="p-4 border-b border-black/5">
               <h3 className="text-sm font-semibold">Group By</h3>
             </div>
             <div className="p-4">
@@ -314,8 +314,8 @@ function SimpleReportBuilder() {
           </div>
 
           {/* Chart Options */}
-          <div className="bg-white rounded-xl border border-black/[.06] overflow-hidden">
-            <div className="p-4 border-b border-black/[.05]">
+          <div className="bg-white rounded-xl border border-black/6 overflow-hidden">
+            <div className="p-4 border-b border-black/5">
               <h3 className="text-sm font-semibold">Chart Type</h3>
             </div>
             <div className="p-4 space-y-2">
@@ -331,7 +331,7 @@ function SimpleReportBuilder() {
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-all duration-100 ${
                     config.chartType === option.value
                       ? 'bg-accent/10 text-accent'
-                      : 'bg-black/[.04] hover:bg-black/[.08] text-text'
+                      : 'bg-black/4 hover:bg-black/8 text-text'
                   }`}
                 >
                   {option.label}

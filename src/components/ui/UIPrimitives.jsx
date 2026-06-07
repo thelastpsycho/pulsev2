@@ -175,10 +175,10 @@ function Button({ children, variant = "primary", size = "md", icon, iconRight, o
   }[size];
   const variants = {
     primary:        "bg-accent text-white border-none hover:bg-accent-hover",
-    secondary:      "bg-[#f2f2f5] text-text border border-black/[.04] hover:bg-[#e7e7eb]",
+    secondary:      "bg-[#f2f2f5] text-text border border-black/4 hover:bg-[#e7e7eb]",
     ghost:          "bg-transparent text-text border-none hover:bg-black/5",
     outline:        "bg-white text-text border border-black/10 hover:bg-bg-soft",
-    danger:         "bg-danger/10 text-danger border-none hover:bg-danger/[.18]",
+    danger:         "bg-danger/10 text-danger border-none hover:bg-danger/18",
     "danger-solid": "bg-danger text-white border-none hover:bg-danger-hover",
     success:        "bg-success text-white border-none hover:bg-success-hover",
   }[variant];
@@ -187,7 +187,7 @@ function Button({ children, variant = "primary", size = "md", icon, iconRight, o
       type={type} onClick={onClick} disabled={disabled || loading} title={title}
       className={cx(
         "inline-flex items-center justify-center font-medium tracking-body",
-        "transition-colors duration-[120ms] font-[inherit] leading-tight",
+        "transition-colors duration-120 font-[inherit] leading-tight",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         loading && "cursor-not-allowed",
         fullWidth ? "w-full" : "w-auto",
@@ -207,7 +207,7 @@ function IconButton({ icon, onClick, title, size = 32, active, className, disabl
   return (
     <button onClick={onClick} title={title} disabled={disabled}
       className={cx(
-        "rounded-lg border-none grid place-items-center transition-colors duration-[120ms]",
+        "rounded-lg border-none grid place-items-center transition-colors duration-120",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         active
           ? "bg-accent/10 text-accent hover:bg-accent/10"
@@ -229,7 +229,7 @@ function Card({ children, className, padding, hover, onClick }) {
   return (
     <div onClick={onClick}
       className={cx(
-        "bg-white rounded-xl border border-black/[.06] overflow-hidden",
+        "bg-white rounded-xl border border-black/6 overflow-hidden",
         "transition-shadow duration-200",
         hover && "hover:shadow-card-hover",
         onClick ? "cursor-pointer" : "cursor-default",
@@ -242,7 +242,7 @@ function Card({ children, className, padding, hover, onClick }) {
 function CardHeader({ title, subtitle, action, className }) {
   return (
     <div className={cx(
-      "pt-4 pb-3.5 px-[22px] border-b border-black/[.05]",
+      "pt-4 pb-3.5 px-[22px] border-b border-black/5",
       "flex items-center justify-between gap-3",
       className,
     )}>
@@ -262,7 +262,7 @@ function Skeleton({ width = "100%", height = 14, radius = 6, className }) {
   const r = `rounded-[${radius}px]`;
   return <div className={cx(
     w, h, r,
-    "bg-gradient-to-r from-[#f0f0f3] via-[#e7e7eb] to-[#f0f0f3] bg-[length:200%_100%]",
+    "bg-linear-to-r from-[#f0f0f3] via-[#e7e7eb] to-[#f0f0f3] bg-size-[200%_100%]",
     "animate-shimmer",
     className,
   )}/>;
@@ -295,7 +295,7 @@ function EmptyState({ icon = "inbox", title, description, action }) {
 function Kbd({ children }) {
   return <kbd className={cx(
     "inline-flex items-center justify-center px-1.5 py-px",
-    "bg-[#f2f2f5] rounded-[5px] border border-black/[.08] shadow-kbd",
+    "bg-[#f2f2f5] rounded-[5px] border border-black/8 shadow-kbd",
     "text-[11px] font-mono text-muted min-w-[18px]",
   )}>{children}</kbd>;
 }

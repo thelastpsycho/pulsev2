@@ -331,7 +331,7 @@ export function ReportBuilder() {
                     'flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-all duration-100',
                     selectedFields.has(field.id)
                       ? 'bg-accent/10 text-accent cursor-not-allowed opacity-50'
-                      : 'bg-black/[.04] hover:bg-black/[.08] text-text'
+                      : 'bg-black/4 hover:bg-black/8 text-text'
                   )}
                 >
                   <Icon
@@ -356,7 +356,7 @@ export function ReportBuilder() {
                 {config.fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-black/[.04] rounded-lg group"
+                    className="flex items-center gap-2 px-3 py-2 bg-black/4 rounded-lg group"
                   >
                     <div className="flex items-center gap-2 flex-1">
                       <Icon name="list" size={14} color={TOKENS.mutedLight} />
@@ -368,20 +368,20 @@ export function ReportBuilder() {
                       <button
                         onClick={() => moveField(index, 'up')}
                         disabled={index === 0}
-                        className="p-1 rounded hover:bg-black/[.08] disabled:opacity-30"
+                        className="p-1 rounded hover:bg-black/8 disabled:opacity-30"
                       >
                         <Icon name="chevron-up" size={14} />
                       </button>
                       <button
                         onClick={() => moveField(index, 'down')}
                         disabled={index === config.fields.length - 1}
-                        className="p-1 rounded hover:bg-black/[.08] disabled:opacity-30"
+                        className="p-1 rounded hover:bg-black/8 disabled:opacity-30"
                       >
                         <Icon name="chevron-down" size={14} />
                       </button>
                       <button
                         onClick={() => removeField(field.id)}
-                        className="p-1 rounded hover:bg-black/[.08]"
+                        className="p-1 rounded hover:bg-black/8"
                       >
                         <Icon name="x" size={14} color={TOKENS.danger} />
                       </button>
@@ -446,7 +446,7 @@ export function ReportBuilder() {
                     'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-all duration-100',
                     config.chart_type === option.value
                       ? 'bg-accent/10 text-accent'
-                      : 'bg-black/[.04] hover:bg-black/[.08] text-text'
+                      : 'bg-black/4 hover:bg-black/8 text-text'
                   )}
                 >
                   <Icon

@@ -399,7 +399,7 @@ export function GlobalSearch() {
         >
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
             {/* Search Input */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-black/[.08]">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-black/8">
               <Icon name="search" size={20} color={TOKENS.mutedLight} />
               <input
                 ref={inputRef}
@@ -410,7 +410,7 @@ export function GlobalSearch() {
                 className="flex-1 border-none outline-none text-base text-text placeholder:text-muted-light bg-transparent"
               />
               <div className="flex items-center gap-2 text-xs text-muted-light">
-                <kbd className="px-2 py-1 bg-black/[.04] rounded font-mono">ESC</kbd>
+                <kbd className="px-2 py-1 bg-black/4 rounded font-mono">ESC</kbd>
                 <span>to close</span>
               </div>
             </div>
@@ -428,7 +428,7 @@ export function GlobalSearch() {
                   <Icon name="search" size={32} color={TOKENS.mutedLight} />
                   <div className="mt-3 text-sm">Type to search across everything</div>
                   <div className="mt-4 text-xs">
-                    Press <kbd className="px-1.5 py-0.5 bg-black/[.04] rounded font-mono">?</kbd> for keyboard shortcuts
+                    Press <kbd className="px-1.5 py-0.5 bg-black/4 rounded font-mono">?</kbd> for keyboard shortcuts
                   </div>
                 </div>
               )}
@@ -460,7 +460,7 @@ export function GlobalSearch() {
                               className={cx(
                                 'w-full flex items-center gap-3 px-5 py-2.5 text-left border-none cursor-pointer',
                                 'transition-colors duration-100',
-                                isSelected ? 'bg-accent/10' : 'hover:bg-black/[.03]'
+                                isSelected ? 'bg-accent/10' : 'hover:bg-black/3'
                               )}
                             >
                               <Icon
@@ -497,14 +497,14 @@ export function GlobalSearch() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-2 border-t border-black/[.08] flex items-center justify-between text-xs text-muted-light">
+            <div className="px-5 py-2 border-t border-black/8 flex items-center justify-between text-xs text-muted-light">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-black/[.04] rounded font-mono">↑↓</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-black/4 rounded font-mono">↑↓</kbd>
                   navigate
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-black/[.04] rounded font-mono">↵</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-black/4 rounded font-mono">↵</kbd>
                   select
                 </span>
               </div>

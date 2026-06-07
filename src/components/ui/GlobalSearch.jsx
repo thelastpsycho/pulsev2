@@ -179,7 +179,7 @@ function SimpleGlobalSearch() {
         >
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
             {/* Search Input */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-black/[.08]">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-black/8">
               <Icon name="search" size={20} color={TOKENS.mutedLight} />
               <input
                 ref={inputRef}
@@ -190,7 +190,7 @@ function SimpleGlobalSearch() {
                 className="flex-1 border-none outline-none text-base text-text placeholder:text-muted-light bg-transparent"
               />
               <div className="flex items-center gap-2 text-xs text-muted-light">
-                <span className="px-2 py-1 bg-black/[.04] rounded font-mono">ESC</span>
+                <span className="px-2 py-1 bg-black/4 rounded font-mono">ESC</span>
                 <span>to close</span>
               </div>
             </div>
@@ -226,7 +226,7 @@ function SimpleGlobalSearch() {
                             key={result.id}
                             onClick={() => selectResult(result)}
                             className={`w-full flex items-center gap-3 px-5 py-2.5 text-left border-none cursor-pointer transition-colors duration-100 ${
-                              isSelected ? 'bg-accent/10' : 'hover:bg-black/[.03]'
+                              isSelected ? 'bg-accent/10' : 'hover:bg-black/3'
                             }`}
                           >
                             <Icon
@@ -256,14 +256,14 @@ function SimpleGlobalSearch() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-2 border-t border-black/[.08] flex items-center justify-between text-xs text-muted-light">
+            <div className="px-5 py-2 border-t border-black/8 flex items-center justify-between text-xs text-muted-light">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-black/[.04] rounded font-mono">↑↓</span>
+                  <span className="px-1.5 py-0.5 bg-black/4 rounded font-mono">↑↓</span>
                   navigate
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-black/[.04] rounded font-mono">↵</span>
+                  <span className="px-1.5 py-0.5 bg-black/4 rounded font-mono">↵</span>
                   select
                 </span>
               </div>

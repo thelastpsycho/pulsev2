@@ -167,7 +167,7 @@ function MultiSelect({ value = [], onChange, options, placeholder = "Select…",
             return (
               <div key={o.value} onClick={() => toggle(o.value)} className={cxF(
                 "flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13.5px]",
-                isSel ? "bg-accent/[.06]" : "bg-transparent hover:bg-black/[.03]",
+                isSel ? "bg-accent/6" : "bg-transparent hover:bg-black/3",
               )}>
                 <div className={cxF(
                   "w-4 h-4 rounded grid place-items-center shrink-0",
@@ -233,7 +233,7 @@ function SearchableSelect({ value, onChange, options, placeholder = "Select…",
                 onClick={() => { onChange(o.value); setOpen(false); }}
                 className={cxF(
                   "flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13.5px]",
-                  isSelected ? "bg-accent/[.06]" : "bg-transparent hover:bg-black/[.03]",
+                  isSelected ? "bg-accent/6" : "bg-transparent hover:bg-black/3",
                 )}>
                 <div className={cxF(
                   "w-4 h-4 rounded grid place-items-center shrink-0",
@@ -262,7 +262,7 @@ function Checkbox({ checked, onChange, label, disabled, className }) {
       <input type="checkbox" checked={!!checked} onChange={e => onChange?.(e.target.checked)} disabled={disabled} className="absolute opacity-0 w-0 h-0"/>
       <span className={cxF(
         "w-4 h-4 rounded grid place-items-center transition-all duration-100",
-        checked ? "border-[1.5px] border-accent bg-accent" : "border-[1.5px] border-black/[.22] bg-transparent",
+        checked ? "border-[1.5px] border-accent bg-accent" : "border-[1.5px] border-black/22 bg-transparent",
       )}>
         {checked && <IconF name="check" size={11} color="#fff" strokeWidth={3}/>}
       </span>
@@ -310,7 +310,7 @@ function Segmented({ value, onChange, options, className }) {
         const active = value === v;
         return (
           <button key={v} onClick={() => onChange?.(v)} className={cxF(
-            "py-[5px] px-3 border-none rounded-[7px] text-[12.5px] font-medium font-[inherit] cursor-pointer transition-all duration-[120ms]",
+            "py-[5px] px-3 border-none rounded-[7px] text-[12.5px] font-medium font-[inherit] cursor-pointer transition-all duration-120",
             active
               ? "bg-white text-text shadow-[0_1px_2px_rgba(0,0,0,0.08),0_0_0_0.5px_rgba(0,0,0,0.04)]"
               : "bg-transparent text-muted",
