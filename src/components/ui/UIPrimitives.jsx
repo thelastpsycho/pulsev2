@@ -159,8 +159,9 @@ const PRIORITY = {
   low:    { label: "Low",    color: TOKENS.low },
 };
 const STATUS = {
-  open:   { label: "Open",   color: TOKENS.accent },
-  closed: { label: "Closed", color: TOKENS.success },
+  open:     { label: "Open",     color: TOKENS.accent },
+  closed:   { label: "Closed",   color: TOKENS.success },
+  verified: { label: "Verified", color: TOKENS.warning },
 };
 
 function PriorityPill({ value }) { const m = PRIORITY[value] || PRIORITY.medium; return <Pill color={m.color} dot>{m.label}</Pill>; }

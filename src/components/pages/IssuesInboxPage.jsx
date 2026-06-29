@@ -139,11 +139,12 @@ function IssuesListColumn({ issues, loading, selectedId, filters, setF, setFilte
   const tabs = [
     { value: "open", label: "Open" },
     { value: "closed", label: "Closed" },
+    { value: "verified", label: "Verified" },
     { value: "", label: "All" },
   ];
 
   const filterLabel = {
-    open: "Open issues", closed: "Closed issues", "": "All issues",
+    open: "Open issues", closed: "Closed issues", verified: "Verified issues", "": "All issues",
   }[filters.status] || "Issues";
 
   return (
@@ -301,6 +302,7 @@ function IssueDetailPaneInbox({ id, onChange }) {
   const [assignOpen, setAssignOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [user, setUser] = useState(null);
   const actionsRef = useRef();
 
   const reload = useCallback(() => {
@@ -308,6 +310,28 @@ function IssueDetailPaneInbox({ id, onChange }) {
     setLoading(true);
     window.PulseAPI.Issues.get(id).then(r => { setIssue(r.data); setLoading(false); });
   }, [id]);
+
+  // Fetch current user for permission checks
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await window.PulseAPI.Auth.me();
+        setUser(response.data.user);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Handle keyboard shortcuts for issue actions
+  useEffect(() => {
+    const handleVerifyShortcut = () => {
+      verify();
+    };
+    window.addEventListener('gp:issue:verify', handleVerifyShortcut);
+    return () => window.removeEventListener('gp:issue:verify', handleVerifyShortcut);
+  }, [verify]);
 
   const close = useCallback(async () => {
     if (!id) return;
@@ -322,6 +346,17 @@ function IssueDetailPaneInbox({ id, onChange }) {
     window.toast.success(`Issue #${id} reopened`);
     reload(); onChange?.();
   }, [id, reload, onChange]);
+
+  const verify = useCallback(async () => {
+    if (!user || !window.PulseLayout.can(user, "issues.verify")) {
+      window.toast.error("You don't have permission to verify issues");
+      return;
+    }
+    if (!id) return;
+    await window.PulseAPI.Issues.verify(id);
+    window.toast.success(`Issue #${id} verified`);
+    reload(); onChange?.();
+  }, [id, reload, onChange, user]);
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
   useEffect(() => {
@@ -433,7 +468,9 @@ function IssueDetailPaneInbox({ id, onChange }) {
           <BIB variant="ghost" size="sm" icon="user" onClick={() => setAssignOpen(true)}>{issue.assignedTo ? "Reassign" : "Assign"}</BIB>
           {issue.status === "open"
             ? <BIB variant="success" size="sm" icon="check" onClick={close}>Close</BIB>
-            : <BIB variant="outline" size="sm" icon="refresh" onClick={reopen}>Reopen</BIB>
+            : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
+              ? <BIB variant="warning" size="sm" icon="verified" onClick={verify}>Verify</BIB>
+              : <BIB variant="outline" size="sm" icon="refresh" onClick={reopen}>Reopen</BIB>
           }
           <div ref={actionsRef} className="relative">
             <IBIB icon="more" onClick={() => setActionsOpen(o => !o)} size={30}/>

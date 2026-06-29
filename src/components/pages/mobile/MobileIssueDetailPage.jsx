@@ -75,6 +75,7 @@ function MobileIssueDetailPage({ issueId }) {
   const [assignOpen, setAssignOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [user, setUser] = useState(null);
   const actionsRef = useRef(null);
 
   // Get issue ID from URL
@@ -96,6 +97,28 @@ function MobileIssueDetailPage({ issueId }) {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch current user for permission checks
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await window.PulseAPI.Auth.me();
+        setUser(response.data.user);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Handle keyboard shortcuts for issue actions
+  useEffect(() => {
+    const handleVerifyShortcut = () => {
+      verifyIssue();
+    };
+    window.addEventListener('gp:issue:verify', handleVerifyShortcut);
+    return () => window.removeEventListener('gp:issue:verify', handleVerifyShortcut);
   }, []);
 
   const fetchIssue = async () => {
@@ -129,6 +152,21 @@ function MobileIssueDetailPage({ issueId }) {
     } catch (error) {
       console.error('Failed to reopen issue:', error);
       window.toast.error('Failed to reopen issue');
+    }
+  };
+
+  const verifyIssue = async () => {
+    if (!user || !window.PulseLayout.can(user, "issues.verify")) {
+      window.toast.error("You don't have permission to verify issues");
+      return;
+    }
+    try {
+      await window.PulseAPI.Issues.verify(id);
+      window.toast.success(`Issue #${id} verified`);
+      fetchIssue();
+    } catch (error) {
+      console.error('Failed to verify issue:', error);
+      window.toast.error('Failed to verify issue');
     }
   };
 
@@ -279,13 +317,37 @@ function MobileIssueDetailPage({ issueId }) {
         {/* Action buttons */}
         <div className="flex gap-2">
           <Button
-            variant={issue.status === "open" ? "success" : "outline"}
+            variant={
+              issue.status === "open"
+                ? "success"
+                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
+                  ? "warning"
+                  : "outline"
+            }
             size="sm"
-            icon={issue.status === "open" ? "check" : "refresh"}
-            onClick={issue.status === "open" ? closeIssue : reopenIssue}
+            icon={
+              issue.status === "open"
+                ? "check"
+                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
+                  ? "verified"
+                  : "refresh"
+            }
+            onClick={
+              issue.status === "open"
+                ? closeIssue
+                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
+                  ? verifyIssue
+                  : reopenIssue
+            }
             className="flex-1"
           >
-            {issue.status === "open" ? "Close Issue" : "Reopen"}
+            {
+              issue.status === "open"
+                ? "Close Issue"
+                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
+                  ? "Verify"
+                  : "Reopen"
+            }
           </Button>
           <Button
             variant="outline"

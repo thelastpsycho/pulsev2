@@ -388,6 +388,7 @@ function IssueDetailPage({ id }) {
   const [comment, setComment] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [user, setUser] = useState(null);
 
   const reload = useCallback(async () => {
     const r = await window.PulseAPI.Issues.get(id);
@@ -395,6 +396,30 @@ function IssueDetailPage({ id }) {
   }, [id]);
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
+
+  // Fetch current user for permission checks
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await window.PulseAPI.Auth.me();
+        setUser(response.data.user);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Handle keyboard shortcuts for issue actions
+  useEffect(() => {
+    const handleVerifyShortcut = (e) => {
+      if (e.detail === 'gp:issue:verify') {
+        verify();
+      }
+    };
+    window.addEventListener('gp:issue:verify', handleVerifyShortcut);
+    return () => window.removeEventListener('gp:issue:verify', handleVerifyShortcut);
+  }, [verify]);
 
   // Update page title when issue loads
   const pageTitle = issue ? `#${issue.id}: ${issue.title}` : null;
@@ -430,6 +455,20 @@ function IssueDetailPage({ id }) {
       window.toast.error('Failed to reopen issue: ' + (error.message || 'Unknown error'));
     }
   };
+  const verify = async () => {
+    if (!user || !window.PulseLayout.can(user, "issues.verify")) {
+      window.toast.error("You don't have permission to verify issues");
+      return;
+    }
+    try {
+      await window.PulseAPI.Issues.verify(id);
+      window.toast.success(`Issue #${id} verified`);
+      reload();
+    } catch (error) {
+      console.error('Failed to verify issue:', error);
+      window.toast.error('Failed to verify issue: ' + (error.message || 'Unknown error'));
+    }
+  };
   const postComment = async () => {
     if (!comment.trim()) return;
     await window.PulseAPI.Comments.create({ issue_id: id, body: comment.trim() });
@@ -463,7 +502,11 @@ function IssueDetailPage({ id }) {
             </DdI>
             {issue.status === "open"
               ? <BI variant="success" icon="check" onClick={close}>Close issue</BI>
-              : <BI variant="outline" icon="refresh" onClick={reopen}>Reopen</BI>}
+              : issue.status === "closed"
+                ? (user && window.PulseLayout.can(user, "issues.verify"))
+                  ? <BI variant="warning" icon="verified" onClick={verify}>Verify</BI>
+                  : <BI variant="outline" icon="refresh" onClick={reopen}>Reopen</BI>
+                : <BI variant="outline" icon="refresh" onClick={reopen}>Reopen</BI>}
           </>
         }
       />

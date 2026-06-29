@@ -201,6 +201,17 @@ function initKeyboardShortcuts() {
   //   condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
   // });
 
+  // Verify issue action
+  register({
+    key: 'v',
+    description: 'Verify current issue',
+    action: () => {
+      window.dispatchEvent(new CustomEvent('gp:issue:verify'));
+    },
+    category: 'actions',
+    condition: () => /^#\/issues\/\d+$/.test(window.location.hash),
+  });
+
   console.log('[Shortcuts] System initialized');
 
   // Add event listener

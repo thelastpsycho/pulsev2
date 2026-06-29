@@ -176,6 +176,13 @@ export const IssuesAPI = {
   },
 
   /**
+   * Verify closed issue
+   */
+  async verify(id: number): Promise<ApiResponse<Issue>> {
+    return fetchAPI(`/issues/${id}/verify`, { method: 'POST' });
+  },
+
+  /**
    * Reopen closed issue
    */
   async reopen(id: number): Promise<ApiResponse<Issue>> {

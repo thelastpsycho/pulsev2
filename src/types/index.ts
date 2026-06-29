@@ -58,7 +58,7 @@ export interface IssueCategory {
 // ============================================================================
 
 export type IssuePriority = 'urgent' | 'high' | 'medium' | 'low';
-export type IssueStatus = 'open' | 'closed';
+export type IssueStatus = 'open' | 'closed' | 'verified';
 
 export interface Issue {
   id: number;
@@ -81,12 +81,14 @@ export interface Issue {
   assignedTo?: User;
   createdBy?: User;
   closedBy?: User;
+  verifiedBy?: User;
   recovery?: string;
   recovery_cost?: number;
   comments?: Comment[];
   created_at: string;
   updated_at: string;
   closed_at?: string;
+  verified_at?: string;
 }
 
 export interface Comment {
