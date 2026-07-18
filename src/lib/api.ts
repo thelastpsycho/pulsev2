@@ -394,7 +394,8 @@ export const UsersAPI = {
 
 export interface RoleData {
   name: string;
-  permissions?: number[];
+  description?: string;
+  permission_ids?: number[];
 }
 
 export const RolesAPI = {

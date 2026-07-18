@@ -93,6 +93,9 @@ const IssuesAPI = {
   async close(id) {
     return fetchAPI(`/issues/${id}/close`, { method: 'POST' });
   },
+  async verify(id) {
+    return fetchAPI(`/issues/${id}/verify`, { method: 'POST' });
+  },
   async reopen(id) {
     return fetchAPI(`/issues/${id}/reopen`, { method: 'POST' });
   },

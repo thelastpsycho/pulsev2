@@ -316,22 +316,13 @@ function IssueDetailPaneInbox({ id, onChange }) {
     const fetchUser = async () => {
       try {
         const response = await window.PulseAPI.Auth.me();
-        setUser(response.data.user);
+        setUser(response.user);
       } catch (error) {
         console.error('Failed to fetch user:', error);
       }
     };
     fetchUser();
   }, []);
-
-  // Handle keyboard shortcuts for issue actions
-  useEffect(() => {
-    const handleVerifyShortcut = () => {
-      verify();
-    };
-    window.addEventListener('gp:issue:verify', handleVerifyShortcut);
-    return () => window.removeEventListener('gp:issue:verify', handleVerifyShortcut);
-  }, [verify]);
 
   const close = useCallback(async () => {
     if (!id) return;
@@ -353,10 +344,24 @@ function IssueDetailPaneInbox({ id, onChange }) {
       return;
     }
     if (!id) return;
-    await window.PulseAPI.Issues.verify(id);
-    window.toast.success(`Issue #${id} verified`);
-    reload(); onChange?.();
+    try {
+      await window.PulseAPI.Issues.verify(id);
+      window.toast.success(`Issue #${id} verified`);
+      reload(); onChange?.();
+    } catch (error) {
+      console.error('Failed to verify issue:', error);
+      window.toast.error('Failed to verify issue: ' + (error.message || 'Unknown error'));
+    }
   }, [id, reload, onChange, user]);
+
+  // Handle keyboard shortcuts for issue actions (must come after verify is defined)
+  useEffect(() => {
+    const handleVerifyShortcut = () => {
+      verify();
+    };
+    window.addEventListener('gp:issue:verify', handleVerifyShortcut);
+    return () => window.removeEventListener('gp:issue:verify', handleVerifyShortcut);
+  }, [verify]);
 
   useEffect(() => { Promise.resolve().then(reload); }, [reload]);
   useEffect(() => {
@@ -468,8 +473,12 @@ function IssueDetailPaneInbox({ id, onChange }) {
           <BIB variant="ghost" size="sm" icon="user" onClick={() => setAssignOpen(true)}>{issue.assignedTo ? "Reassign" : "Assign"}</BIB>
           {issue.status === "open"
             ? <BIB variant="success" size="sm" icon="check" onClick={close}>Close</BIB>
-            : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
-              ? <BIB variant="warning" size="sm" icon="verified" onClick={verify}>Verify</BIB>
+            : issue.status === "closed"
+              ? <>
+                  {(user && window.PulseLayout.can(user, "issues.verify")) &&
+                    <BIB variant="warning" size="sm" icon="verified" onClick={verify}>Verify</BIB>}
+                  <BIB variant="outline" size="sm" icon="refresh" onClick={reopen}>Reopen</BIB>
+                </>
               : <BIB variant="outline" size="sm" icon="refresh" onClick={reopen}>Reopen</BIB>
           }
           <div ref={actionsRef} className="relative">
@@ -582,14 +591,42 @@ function IssueDetailPaneInbox({ id, onChange }) {
         <div className="mb-6">
           <SectionTitleIB>Activity</SectionTitleIB>
           <div className="relative pl-3.5">
-            <div className="absolute left-3.5 top-1.5 bottom-1.5 w-px bg-black/8"/>
-            <TimelineEntryIB icon="plus" color={TIB.accent} actor={issue.createdBy?.name || "System"} at={issue.created_at} text="Issue opened."/>
-            {(issue.comments || []).map(c => (
-              <TimelineEntryIB key={c.id} icon="edit" color={TIB.muted} actor={c.user.name} at={c.created_at} text={c.body}/>
-            ))}
-            {issue.closed_at && (
-              <TimelineEntryIB icon="check" color={TIB.success} actor={issue.closedBy?.name || "Someone"} at={issue.closed_at} text="Closed the issue."/>
-            )}
+            <div className="absolute left-3.5 top-1.5 bottom-7 w-px bg-black/8"/>
+            {(issue.activityLogs || []).length === 0 && (issue.comments || []).length === 0 &&
+              <div className="pl-3.5 text-muted-light text-[13.5px] italic">No activity yet.</div>
+            }
+            {/* Combine activity logs and comments, sort by created_at */}
+            {[...(issue.activityLogs || []), ...(issue.comments || [])]
+              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .map((item) => {
+                // Check if it's a comment (has body) or activity log (has action)
+                if (item.body) {
+                  // It's a comment
+                  return (
+                    <TimelineEntryIB
+                      key={`comment-${item.id}`}
+                      icon="edit"
+                      color={TIB.muted}
+                      actor={item.user?.name || "Unknown"}
+                      at={item.created_at}
+                      text={item.body}
+                    />
+                  );
+                } else {
+                  // It's an activity log
+                  return (
+                    <TimelineEntryIB
+                      key={`activity-${item.id}`}
+                      icon={getActivityIcon(item.action)}
+                      color={getActivityColor(item.action)}
+                      actor={item.actor?.name || "System"}
+                      at={item.created_at}
+                      text={item.description}
+                    />
+                  );
+                }
+              })
+            }
           </div>
         </div>
 
@@ -699,5 +736,34 @@ function timeAgoIB(iso) {
 }
 function fmtDateIB(iso) { if (!iso) return "—"; return new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }); }
 function fmtDateShortIB(iso) { if (!iso) return "—"; return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" }); }
+
+// Activity helpers
+function getActivityIcon(action) {
+  const icons = {
+    created: "plus",           // New item created
+    updated: "edit",           // Issue was edited/modified
+    closed: "check-circle",    // Issue completed/closed
+    verified: "shield",        // Verified with shield icon
+    reopened: "refresh",       // Reopened/cycled back
+    assigned: "user",          // User assignment
+    comment: "message",        // Comment added
+    deleted: "trash",          // Issue deleted
+  };
+  return icons[action] || "circle";
+}
+
+function getActivityColor(action) {
+  const colors = {
+    created: TIB.accent,       // Blue - new creation
+    updated: TIB.purple,       // Purple - modification
+    closed: TIB.success,       // Green - completed
+    verified: TIB.warning,     // Orange - verified state
+    reopened: TIB.accent,      // Blue - back to active
+    assigned: TIB.purple,      // Purple - assignment change
+    comment: TIB.muted,        // Gray - neutral comment
+    deleted: TIB.danger,       // Red - destructive
+  };
+  return colors[action] || TIB.muted;
+}
 
 window.PageIssuesInbox = IssuesInboxPage;

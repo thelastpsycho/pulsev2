@@ -14,7 +14,7 @@ const safeWindow = () => ({
 
 const w = safeWindow();
 const IR = w.UI.Icon; const AvR = w.UI.Avatar; const PR = w.UI.Pill; const BR = w.UI.Button; const CR = w.UI.Card; const CHR = w.UI.CardHeader; const SR = w.UI.Skeleton; const ER = w.UI.EmptyState; const TR = w.UI.TOKENS;
-const SeR = w.Form.Select; const SgR = w.Form.Segmented; const InR = w.Form.Input;
+const SeR = w.Form.Select; const MuR = w.Form.MultiSelect; const SgR = w.Form.Segmented; const InR = w.Form.Input;
 const PHR = w.Layout.PageHeader; const LinkR = w.Layout.Link;
 
 // =====================================================================
@@ -85,10 +85,10 @@ function ReportsCustom() {
     date_range: 'all', // Changed from separate date_from/date_to to a single range selector
     date_from: '',
     date_to: '',
-    status: '',
-    priority: '',
-    department_id: '',
-    issue_type_id: '',
+    status: [],        // Multiple statuses
+    priority: [],      // Multiple priorities
+    department_id: [],  // Multiple departments
+    issue_type_id: [], // Multiple issue types
     page: 1,
     per_page: 10,
   });
@@ -129,10 +129,10 @@ function ReportsCustom() {
           }),
           ...(filters.date_range === 'custom' && filters.date_from && { date_from: filters.date_from }),
           ...(filters.date_range === 'custom' && filters.date_to && { date_to: filters.date_to }),
-          ...(filters.status && { status: filters.status }),
-          ...(filters.priority && { priority: filters.priority }),
-          ...(filters.department_id && { department_id: Number(filters.department_id) }),
-          ...(filters.issue_type_id && { issue_type_id: Number(filters.issue_type_id) }),
+          ...(filters.status.length > 0 && { status: filters.status.join(',') }),
+          ...(filters.priority.length > 0 && { priority: filters.priority.join(',') }),
+          ...(filters.department_id.length > 0 && { department_id: filters.department_id.join(',') }),
+          ...(filters.issue_type_id.length > 0 && { issue_type_id: filters.issue_type_id.join(',') }),
         };
 
         // Fetch paginated data for table
@@ -168,9 +168,11 @@ function ReportsCustom() {
     };
 
     // Only load if at least one filter is set (other than 'all')
-    const hasFilters = filters.status || filters.priority || filters.department_id || filters.issue_type_id ||
-                      (filters.date_range !== 'all' && filters.date_range !== 'custom') ||
-                      (filters.date_range === 'custom' && (filters.date_from || filters.date_to));
+    // For date_range: if it's 'all', no date filter. If it's a preset or 'custom' with dates, apply filter.
+    const hasDateFilter = filters.date_range !== 'all' &&
+                         (filters.date_range !== 'custom' || (filters.date_from || filters.date_to));
+    const hasFilters = filters.status.length > 0 || filters.priority.length > 0 ||
+                       filters.department_id.length > 0 || filters.issue_type_id.length > 0 || hasDateFilter;
 
     if (hasFilters) {
       loadIssues();
@@ -193,10 +195,10 @@ function ReportsCustom() {
       date_range: 'all',
       date_from: '',
       date_to: '',
-      status: '',
-      priority: '',
-      department_id: '',
-      issue_type_id: '',
+      status: [],
+      priority: [],
+      department_id: [],
+      issue_type_id: [],
       page: 1,
       per_page: 25,
     });
@@ -215,145 +217,66 @@ function ReportsCustom() {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Header
+    // Header background
+    doc.setFillColor(0, 122, 255);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+
+    // Header text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
-    doc.setTextColor(0, 0, 0);
-    doc.text('GuestPulse Custom Report', pageWidth / 2, 20, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.text('GuestPulse Issue Report', pageWidth / 2, 16, { align: 'center' });
 
-    // Report metadata
-    doc.setFontSize(11);
-    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     const reportDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
-    doc.text(`Generated: ${reportDate}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`Generated on ${reportDate}`, pageWidth / 2, 24, { align: 'center' });
+    doc.text('Anvaya Beach Resort & Spa Bali', pageWidth / 2, 30, { align: 'center' });
 
-    // Filter summary
-    let filterSummary = [];
-    if (filters.date_range !== 'all') {
-      filterSummary.push(`Date: ${getDateRangeDisplay()}`);
-    }
-    if (filters.status) {
-      filterSummary.push(`Status: ${filters.status}`);
-    }
-    if (filters.priority) {
-      filterSummary.push(`Priority: ${filters.priority}`);
-    }
-    if (filters.department_id) {
-      const deptName = departments.find(d => d.id === Number(filters.department_id))?.name || '';
-      filterSummary.push(`Department: ${deptName}`);
-    }
-    if (filters.issue_type_id) {
-      const typeName = issueTypes.find(t => t.id === Number(filters.issue_type_id))?.name || '';
-      filterSummary.push(`Type: ${typeName}`);
-    }
-
-    if (filterSummary.length > 0) {
-      doc.setFontSize(9);
-      doc.text('Filters: ' + filterSummary.join(' | '), pageWidth / 2, 35, { align: 'center' });
-    }
-
-    // Statistics
-    doc.setFontSize(14);
+    // Body
     doc.setTextColor(0, 0, 0);
-    doc.text('Summary Statistics', 14, 48);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total Issues: ${totalCreated} | Open: ${openIssues} | Closed: ${totalClosed}`, 14, 50);
 
-    const statsData = [
-      ['Total Issues', String(totalCreated)],
-      ['Open Issues', String(openIssues)],
-      ['Closed Issues', String(totalClosed)],
-      ['Urgent Issues', String(urgentIssues)]
-    ];
-
-    doc.autoTable({
-      startY: 52,
-      head: [],
-      body: statsData,
-      theme: 'plain',
-      styles: {
-        fontSize: 10,
-        cellPadding: 2
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 80 },
-        1: { cellWidth: 30 }
+    // Format stay period
+    const formatStayPeriod = (issue) => {
+      if (issue.checkin_date && issue.checkout_date) {
+        return `${new Date(issue.checkin_date).toLocaleDateString()} - ${new Date(issue.checkout_date).toLocaleDateString()}`;
       }
-    });
+      return issue.checkin_date ? new Date(issue.checkin_date).toLocaleDateString() : '—';
+    };
 
-    // Chart Data - Issue Types
-    if (chartData?.typeData?.length > 0) {
-      doc.setFontSize(14);
-      doc.text('Issues by Type', 14, doc.lastAutoTable.finalY + 15);
-
-      const typeData = chartData.typeData.map(item => [
-        item.name,
-        String(item.count),
-        String(Math.round((item.count / totalCreated) * 100) + '%')
-      ]);
-
-      doc.autoTable({
-        startY: doc.lastAutoTable.finalY + 18,
-        head: [['Issue Type', 'Count', 'Percentage']],
-        body: typeData,
-        theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 3 },
-        headStyles: { fillColor: [59, 130, 246] }
-      });
-    }
-
-    // Chart Data - Departments
-    if (chartData?.departmentData?.length > 0) {
-      doc.addPage();
-      doc.setFontSize(14);
-      doc.text('Issues by Department', 14, 20);
-
-      const deptData = chartData.departmentData.map(item => [
-        item.name,
-        String(item.count),
-        String(Math.round((item.count / totalCreated) * 100) + '%')
-      ]);
-
-      doc.autoTable({
-        startY: 24,
-        head: [['Department', 'Count', 'Percentage']],
-        body: deptData,
-        theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 3 },
-        headStyles: { fillColor: [59, 130, 246] }
-      });
-    }
-
-    // Issues Table
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text(`Detailed Issues (${totalCreated} total)`, 14, 20);
-
+    // Build table data
     const tableData = allIssues.map(issue => [
-      '#' + String(issue.id),
-      issue.title || 'N/A',
-      issue.name || issue.room_number || 'N/A',
-      issue.departments?.map(d => d.name).join(', ') || 'N/A',
-      issue.priority,
-      issue.status,
-      new Date(issue.created_at).toLocaleDateString()
+      [
+        `Title: ${issue.title || 'N/A'}`,
+        `Name: ${issue.name || '—'}`,
+        `Room: ${issue.room_number || '—'}`,
+        `Stay: ${formatStayPeriod(issue)}`,
+        `Nationality: ${issue.nationality || '—'}`,
+        `Dept: ${issue.departments?.map(d => d.name).join(', ') || 'N/A'}`,
+        `Priority: ${issue.priority} | Status: ${issue.status}`,
+      ].join('\n'),
+      issue.description || '—',
+      issue.recovery || '—',
     ]);
 
     doc.autoTable({
-      startY: 24,
-      head: [['ID', 'Title', 'Guest/Room', 'Department', 'Priority', 'Status', 'Created']],
+      startY: 56,
+      head: [['Issue Details', 'Description', 'Recovery Action']],
       body: tableData,
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [59, 130, 246] },
+      theme: 'striped',
+      styles: { fontSize: 7, cellPadding: 3 },
+      headStyles: { fillColor: [0, 122, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 20 },
-        5: { cellWidth: 20 },
-        6: { cellWidth: 25 }
+        0: { cellWidth: 58, valign: 'top' },
+        1: { cellWidth: 60, valign: 'top' },
+        2: { cellWidth: 52, valign: 'top' },
       }
     });
 
@@ -363,17 +286,11 @@ function ReportsCustom() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text(
-        `Page ${i} of ${pageCount} | GuestPulse Custom Report`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
+      doc.text(`Page ${i} of ${pageCount}`, 14, pageHeight - 10);
+      doc.text('GuestPulse Issue Report', pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
 
-    // Save
-    const fileName = `GuestPulse_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(fileName);
+    doc.save(`GuestPulse_Report_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const exportToExcel = () => {
@@ -395,10 +312,10 @@ function ReportsCustom() {
       [''],
       ['Filters Applied'],
       ['Date Range', getDateRangeDisplay()],
-      ['Status', filters.status || 'All'],
-      ['Priority', filters.priority || 'All'],
-      ['Department', filters.department_id ? departments.find(d => d.id === Number(filters.department_id))?.name || '' : 'All'],
-      ['Issue Type', filters.issue_type_id ? issueTypes.find(t => t.id === Number(filters.issue_type_id))?.name || '' : 'All']
+      ['Status', filters.status.length > 0 ? filters.status.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ') : 'All'],
+      ['Priority', filters.priority.length > 0 ? filters.priority.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ') : 'All'],
+      ['Department', filters.department_id.length > 0 ? filters.department_id.map(id => departments.find(d => d.id === Number(id))?.name).filter(Boolean).join(', ') : 'All'],
+      ['Issue Type', filters.issue_type_id.length > 0 ? filters.issue_type_id.map(id => issueTypes.find(t => t.id === Number(id))?.name).filter(Boolean).join(', ') : 'All']
     ];
 
     const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
@@ -448,20 +365,29 @@ function ReportsCustom() {
 
     // Detailed Issues sheet
     const issuesData = [
-      ['ID', 'Title', 'Description', 'Guest Name', 'Room Number', 'Department', 'Issue Types', 'Priority', 'Status', 'Created Date', 'Created Time'],
-      ...allIssues.map(issue => [
-        issue.id,
-        issue.title || '',
-        issue.description || '',
-        issue.name || '',
-        issue.room_number || issue.location || '',
-        issue.departments?.map(d => d.name).join(', ') || '',
-        issue.issueTypes?.map(t => t.name).join(', ') || '',
-        issue.priority,
-        issue.status,
-        new Date(issue.created_at).toLocaleDateString(),
-        new Date(issue.created_at).toLocaleTimeString()
-      ])
+      ['ID', 'Name', 'Room Number', 'Check-in Date', 'Check-out Date', 'Stay Period', 'Nationality', 'Title', 'Description', 'Recovery', 'Department', 'Issue Types', 'Priority', 'Status', 'Created Date'],
+      ...allIssues.map(issue => {
+        const checkin = issue.checkin_date ? new Date(issue.checkin_date).toLocaleDateString() : '';
+        const checkout = issue.checkout_date ? new Date(issue.checkout_date).toLocaleDateString() : '';
+        const stayPeriod = (checkin && checkout) ? `${checkin} - ${checkout}` : (checkin || checkout || '');
+        return [
+          issue.id,
+          issue.name || '',
+          issue.room_number || '',
+          checkin,
+          checkout,
+          stayPeriod,
+          issue.nationality || '',
+          issue.title || '',
+          issue.description || '',
+          issue.recovery || '',
+          issue.departments?.map(d => d.name).join(', ') || '',
+          issue.issueTypes?.map(t => t.name).join(', ') || '',
+          issue.priority,
+          issue.status,
+          new Date(issue.created_at).toLocaleDateString(),
+        ];
+      })
     ];
 
     const issuesWs = XLSX.utils.aoa_to_sheet(issuesData);
@@ -469,16 +395,20 @@ function ReportsCustom() {
     // Set column widths
     issuesWs['!cols'] = [
       { wch: 6 },  // ID
+      { wch: 20 }, // Name
+      { wch: 12 }, // Room Number
+      { wch: 12 }, // Check-in Date
+      { wch: 12 }, // Check-out Date
+      { wch: 20 }, // Stay Period
+      { wch: 12 }, // Nationality
       { wch: 30 }, // Title
       { wch: 40 }, // Description
-      { wch: 20 }, // Guest Name
-      { wch: 15 }, // Room Number
-      { wch: 20 }, // Department
-      { wch: 25 }, // Issue Types
+      { wch: 25 }, // Recovery
+      { wch: 18 }, // Department
+      { wch: 20 }, // Issue Types
       { wch: 10 }, // Priority
       { wch: 10 }, // Status
-      { wch: 15 }, // Created Date
-      { wch: 12 }  // Created Time
+      { wch: 12 }, // Created Date
     ];
 
     XLSX.utils.book_append_sheet(wb, issuesWs, 'All Issues');
@@ -486,6 +416,14 @@ function ReportsCustom() {
     // Save
     const fileName = `GuestPulse_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
+  };
+
+  // Helper function to format date to YYYY-MM-DD in local timezone
+  const formatDateLocal = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Date range handler
@@ -496,21 +434,21 @@ function ReportsCustom() {
 
     switch (range) {
       case 'today':
-        dateFrom = today.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(today);
+        dateTo = formatDateLocal(today);
         break;
       case 'last_7_days': {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
-        dateFrom = sevenDaysAgo.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(sevenDaysAgo);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'this_week': {
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
-        dateFrom = startOfWeek.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfWeek);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'last_week': {
@@ -518,54 +456,54 @@ function ReportsCustom() {
         endOfLastWeek.setDate(today.getDate() - today.getDay() - 1); // Saturday
         const startOfLastWeek = new Date(endOfLastWeek);
         startOfLastWeek.setDate(endOfLastWeek.getDate() - 6); // Previous Sunday
-        dateFrom = startOfLastWeek.toISOString().split('T')[0];
-        dateTo = endOfLastWeek.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfLastWeek);
+        dateTo = formatDateLocal(endOfLastWeek);
         break;
       }
       case 'this_month': {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        dateFrom = startOfMonth.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfMonth);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'last_month': {
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        dateFrom = startOfLastMonth.toISOString().split('T')[0];
-        dateTo = endOfLastMonth.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfLastMonth);
+        dateTo = formatDateLocal(endOfLastMonth);
         break;
       }
       case 'this_quarter': {
         const quarter = Math.floor(now.getMonth() / 3);
         const startOfQuarter = new Date(now.getFullYear(), quarter * 3, 1);
-        dateFrom = startOfQuarter.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfQuarter);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'last_30_days': {
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
-        dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(thirtyDaysAgo);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'last_90_days': {
         const ninetyDaysAgo = new Date(today);
         ninetyDaysAgo.setDate(today.getDate() - 90);
-        dateFrom = ninetyDaysAgo.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(ninetyDaysAgo);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'this_year': {
         const startOfYear = new Date(now.getFullYear(), 0, 1);
-        dateFrom = startOfYear.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfYear);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'year_to_date': {
         const startOfYTD = new Date(now.getFullYear(), 0, 1);
-        dateFrom = startOfYTD.toISOString().split('T')[0];
-        dateTo = today.toISOString().split('T')[0];
+        dateFrom = formatDateLocal(startOfYTD);
+        dateTo = formatDateLocal(today);
         break;
       }
       case 'custom':
@@ -586,8 +524,11 @@ function ReportsCustom() {
     }));
   };
 
-  const hasFilters = filters.status || filters.priority || filters.department_id || filters.issue_type_id ||
-                      (filters.date_range !== 'all');
+  // Check if there's an active date filter (either preset or custom with dates set)
+  const hasDateFilter = filters.date_range !== 'all' &&
+                       (filters.date_from || filters.date_to);
+  const hasFilters = filters.status.length > 0 || filters.priority.length > 0 ||
+                     filters.department_id.length > 0 || filters.issue_type_id.length > 0 || hasDateFilter;
   const totalCreated = meta?.total || 0;
   const totalClosed = allIssues.filter(i => i.status === 'closed').length;
   const openIssues = allIssues.filter(i => i.status === 'open').length;
@@ -709,21 +650,20 @@ function ReportsCustom() {
               />
             </div>
 
-            {/* Status */}
+            {/* Status - Multi-select */}
             <div>
               <label className="block text-[12px] font-semibold text-muted-light mb-1">Status</label>
-              <SeR value={filters.status} onChange={v => updateFilter('status', v)} placeholder="All statuses" options={[
-                { value: "", label: "All statuses" },
+              <MuR value={filters.status} onChange={v => updateFilter('status', v)} placeholder="All statuses" options={[
                 { value: "open", label: "Open" },
                 { value: "closed", label: "Closed" },
+                { value: "verified", label: "Verified" },
               ]}/>
             </div>
 
-            {/* Priority */}
+            {/* Priority - Multi-select */}
             <div>
               <label className="block text-[12px] font-semibold text-muted-light mb-1">Priority</label>
-              <SeR value={filters.priority} onChange={v => updateFilter('priority', v)} placeholder="All priorities" options={[
-                { value: "", label: "All priorities" },
+              <MuR value={filters.priority} onChange={v => updateFilter('priority', v)} placeholder="All priorities" options={[
                 { value: "urgent", label: "Urgent" },
                 { value: "high", label: "High" },
                 { value: "medium", label: "Medium" },
@@ -731,22 +671,16 @@ function ReportsCustom() {
               ]}/>
             </div>
 
-            {/* Department */}
+            {/* Department - Multi-select */}
             <div>
               <label className="block text-[12px] font-semibold text-muted-light mb-1">Department</label>
-              <SeR value={filters.department_id} onChange={v => updateFilter('department_id', v)} placeholder="All departments" options={[
-                { value: "", label: "All departments" },
-                ...departments.filter(d => d.is_active).map(d => ({ value: d.id, label: d.name })),
-              ]}/>
+              <MuR value={filters.department_id} onChange={v => updateFilter('department_id', v)} placeholder="All departments" options={departments.filter(d => d.is_active).map(d => ({ value: String(d.id), label: d.name }))}/>
             </div>
 
-            {/* Issue Type */}
+            {/* Issue Type - Multi-select */}
             <div>
               <label className="block text-[12px] font-semibold text-muted-light mb-1">Issue Type</label>
-              <SeR value={filters.issue_type_id} onChange={v => updateFilter('issue_type_id', v)} placeholder="All types" options={[
-                { value: "", label: "All types" },
-                ...issueTypes.filter(t => t.is_active).map(t => ({ value: t.id, label: t.name })),
-              ]}/>
+              <MuR value={filters.issue_type_id} onChange={v => updateFilter('issue_type_id', v)} placeholder="All types" options={issueTypes.filter(t => t.is_active).map(t => ({ value: String(t.id), label: t.name }))}/>
             </div>
 
             {/* Export buttons placeholder */}
@@ -1002,6 +936,82 @@ function ReportsLogbook() {
     fetchIssues();
   }, [date]);
 
+  const exportLogbookToPDF = () => {
+    if (!issues.length) {
+      window.toast?.error('No data to export');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Duty Manager Logbook', pageWidth / 2, 20, { align: 'center' });
+
+    // Date and location info
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    const reportDate = new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    doc.text(reportDate, pageWidth / 2, 28, { align: 'center' });
+    doc.text('Anvaya Beach Resort & Spa Bali', pageWidth / 2, 34, { align: 'center' });
+
+    // Issues table
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Issues Log', 14, 48);
+
+    const tableData = issues.map(issue => [
+      '#' + String(issue.id),
+      issue.title || 'N/A',
+      issue.location || 'N/A',
+      issue.name || '—',
+      issue.priority || 'N/A',
+      new Date(issue.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      issue.description || 'N/A'
+    ]);
+
+    doc.autoTable({
+      startY: 52,
+      head: [['ID', 'Title', 'Location', 'Guest/Room', 'Priority', 'Time', 'Description']],
+      body: tableData,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246] },
+      columnStyles: {
+        0: { cellWidth: 12 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 18 },
+        6: { cellWidth: 50 }
+      }
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Page ${i} of ${pageCount} | Duty Manager Logbook`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+
+    // Save
+    const fileName = `Logbook_${date}.pdf`;
+    doc.save(fileName);
+    window.toast?.success('Logbook exported successfully');
+  };
+
   if (loading) return <div className="px-5.5 text-center text-muted">Loading logbook...</div>;
 
   return (
@@ -1010,7 +1020,7 @@ function ReportsLogbook() {
         <InR value={date} onChange={setDate} type="date" className="w-[170px]"/>
         <SgR value="day" onChange={() => {}} options={[{ value: "day", label: "Day" }, { value: "week", label: "Week" }]}/>
         <div className="flex-1"/>
-        <BR variant="outline" icon="download" size="sm">Export PDF</BR>
+        <BR variant="outline" icon="download" size="sm" onClick={exportLogbookToPDF}>Export PDF</BR>
       </div>
       <CR>
         <div className="px-5.5">

@@ -161,6 +161,21 @@ function MultiSelect({ value = [], onChange, options, placeholder = "Select…",
           <div className="p-1 sticky top-0 bg-white">
             <Input value={q} onChange={setQ} icon="search" placeholder="Search…" className="py-1.5 pl-[30px] pr-2.5 text-[13px]"/>
           </div>
+          {filtered.length > 0 && (
+            <div onClick={() => {
+              const allSelected = filtered.every(o => value.includes(o.value));
+              if (allSelected) {
+                onChange(value.filter(v => !filtered.some(o => o.value === v)));
+              } else {
+                onChange([...value, ...filtered.filter(o => !value.includes(o.value)).map(o => o.value)]);
+              }
+            }} className="flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13px] font-semibold text-accent hover:bg-accent/6 mb-1">
+              <div className="w-4 h-4 rounded grid place-items-center shrink-0 border-[1.5px] border-accent bg-transparent">
+                {filtered.every(o => value.includes(o.value)) && <IconF name="check" size={10} color="#007aff" strokeWidth={3}/>}
+              </div>
+              <span>{filtered.every(o => value.includes(o.value)) ? 'Deselect all' : 'Select all'}</span>
+            </div>
+          )}
           {filtered.length === 0 && <div className="py-4 px-3 text-center text-muted-light text-[13px]">No matches</div>}
           {filtered.map(o => {
             const isSel = value.includes(o.value);

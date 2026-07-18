@@ -205,9 +205,14 @@ function AdminRolesPage() {
   }, []);
 
   const save = async (data) => {
-    if (editing === "new") { const r = await window.PulseAPI.Roles.create(data); setRoles(rs => [...rs, r.data]); window.toast.success(`${r.data.name} role created`); }
-    else { const r = await window.PulseAPI.Roles.update(editing.id, data); setRoles(rs => rs.map(x => x.id === r.data.id ? r.data : x)); window.toast.success(`${r.data.name} role updated`); }
-    setEditing(null);
+    try {
+      if (editing === "new") { const r = await window.PulseAPI.Roles.create(data); setRoles(rs => [...rs, r.data]); window.toast.success(`${r.data.name} role created`); }
+      else { const r = await window.PulseAPI.Roles.update(editing.id, data); setRoles(rs => rs.map(x => x.id === r.data.id ? r.data : x)); window.toast.success(`${r.data.name} role updated`); }
+      setEditing(null);
+    } catch (err) {
+      console.error('Failed to save role:', err);
+      window.toast.error(err.message || 'Failed to save role');
+    }
   };
 
   return (
@@ -265,9 +270,9 @@ function AdminRolesPage() {
 function RoleFormDrawer({ role, onClose, onSave }) {
   const isNew = !role;
   const [permissions, setPermissions] = useState([]);
-  const [form, setForm] = useState(role ? { ...role } : { name: "", description: "", permissions: [] });
+  const [form, setForm] = useState(role ? { name: role.name, description: role.description, permission_ids: role.permissions?.map(p => typeof p === 'object' ? p.id : p) || [] } : { name: "", description: "", permission_ids: [] });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const togglePerm = (id) => set("permissions", form.permissions.includes(id) ? form.permissions.filter(p => p !== id) : [...form.permissions, id]);
+  const togglePerm = (id) => set("permission_ids", form.permission_ids.includes(id) ? form.permission_ids.filter(p => p !== id) : [...form.permission_ids, id]);
 
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -302,16 +307,16 @@ function RoleFormDrawer({ role, onClose, onSave }) {
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[12.5px] font-semibold text-text capitalize">{g}</div>
             <button onClick={() => {
-              const allOn = perms.every(p => form.permissions.includes(p.id));
-              if (allOn) set("permissions", form.permissions.filter(id => !perms.find(p => p.id === id)));
-              else set("permissions", [...new Set([...form.permissions, ...perms.map(p => p.id)])]);
+              const allOn = perms.every(p => form.permission_ids.includes(p.id));
+              if (allOn) set("permission_ids", form.permission_ids.filter(id => !perms.find(p => p.id === id)));
+              else set("permission_ids", [...new Set([...form.permission_ids, ...perms.map(p => p.id)])]);
             }} className="bg-none border-none text-accent text-[12px] cursor-pointer font-medium">
               Toggle all
             </button>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {perms.map(p => (
-              <CbA key={p.id} checked={form.permissions.includes(p.id)} onChange={() => togglePerm(p.id)} label={p.name.split(".").slice(1).join(".")}/>
+              <CbA key={p.id} checked={form.permission_ids.includes(p.id)} onChange={() => togglePerm(p.id)} label={p.name.split(".").slice(1).join(".")}/>
             ))}
           </div>
         </div>

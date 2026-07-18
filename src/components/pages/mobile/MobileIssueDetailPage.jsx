@@ -104,7 +104,7 @@ function MobileIssueDetailPage({ issueId }) {
     const fetchUser = async () => {
       try {
         const response = await window.PulseAPI.Auth.me();
-        setUser(response.data.user);
+        setUser(response.user);
       } catch (error) {
         console.error('Failed to fetch user:', error);
       }
@@ -316,39 +316,50 @@ function MobileIssueDetailPage({ issueId }) {
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          <Button
-            variant={
-              issue.status === "open"
-                ? "success"
-                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
-                  ? "warning"
-                  : "outline"
-            }
-            size="sm"
-            icon={
-              issue.status === "open"
-                ? "check"
-                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
-                  ? "verified"
-                  : "refresh"
-            }
-            onClick={
-              issue.status === "open"
-                ? closeIssue
-                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
-                  ? verifyIssue
-                  : reopenIssue
-            }
-            className="flex-1"
-          >
-            {
-              issue.status === "open"
-                ? "Close Issue"
-                : issue.status === "closed" && user && window.PulseLayout.can(user, "issues.verify")
-                  ? "Verify"
-                  : "Reopen"
-            }
-          </Button>
+          {issue.status === "open" ? (
+            <Button
+              variant="success"
+              size="sm"
+              icon="check"
+              onClick={closeIssue}
+              className="flex-1"
+            >
+              Close Issue
+            </Button>
+          ) : issue.status === "closed" ? (
+            <>
+              {(user && window.PulseLayout.can(user, "issues.verify")) && (
+                <Button
+                  variant="warning"
+                  size="sm"
+                  icon="verified"
+                  onClick={verifyIssue}
+                  className="flex-1"
+                >
+                  Verify
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                icon="refresh"
+                onClick={reopenIssue}
+                className="flex-1"
+              >
+                Reopen
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              icon="refresh"
+              onClick={reopenIssue}
+              className="flex-1"
+            >
+              Reopen
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
