@@ -1,6 +1,11 @@
 {
   "version": 2,
   "name": "guestpulse-frontend",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
   "builds": [
     {
       "src": "package.json",
