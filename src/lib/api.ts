@@ -390,6 +390,19 @@ export const UsersAPI = {
   async destroy(id: number): Promise<ApiResponse<{ message: string }>> {
     return fetchAPI(`/users/${id}`, { method: 'DELETE' });
   },
+
+  /**
+   * Change user password (admin only)
+   */
+  async changePassword(id: number, password: string): Promise<ApiResponse<{ message: string }>> {
+    return fetchAPI(`/users/${id}/password`, {
+      method: 'POST',
+      body: JSON.stringify({
+        password,
+        password_confirmation: password
+      }),
+    });
+  },
 };
 
 export interface RoleData {

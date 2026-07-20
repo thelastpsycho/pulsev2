@@ -24,6 +24,7 @@ function AdminUsersPage() {
   const [users, setUsers] = useState(null);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null); // user being edited or 'new'
+  const [changingPassword, setChangingPassword] = useState(null); // user whose password is being changed
   useEffect(() => { window.PulseAPI.Users.list().then(r => setUsers(r.data)); }, []);
 
   const filtered = users?.filter(u => !q || u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()));
@@ -95,7 +96,7 @@ function AdminUsersPage() {
                     <td className={tdAClass}>
                       <DdA trigger={<button className="bg-none border-none p-1 cursor-pointer"><IA name="more" size={15} color={TA.mutedLight}/></button>}>
                         <DiA icon="edit" label="Edit" onClick={() => setEditing(u)}/>
-                        <DiA icon="key" label="Change password"/>
+                        <DiA icon="key" label="Change password" onClick={() => setChangingPassword(u)}/>
                         <DiA icon={u.is_active ? "x-circle" : "check-circle"} label={u.is_active ? "Deactivate" : "Activate"} onClick={() => toggleActive(u)}/>
                         <DdvA/>
                         <DiA icon="trash" label="Delete" danger onClick={() => deleteUser(u)}/>
@@ -109,6 +110,7 @@ function AdminUsersPage() {
         </CA>
       </div>
       {editing && <UserFormDrawer user={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save}/>}
+      {changingPassword && <PasswordChangeDrawer user={changingPassword} onClose={() => setChangingPassword(null)}/>}
     </div>
   );
 }
@@ -177,6 +179,64 @@ function UserFormDrawer({ user, onClose, onSave }) {
       </FA>
       {isNew && <FA label="Temporary password" hint="User must change on first login." error={errors.temporary_password}><InA type="password" value={form.temporary_password} onChange={v => set("temporary_password", v)} placeholder="••••••••" error={!!errors.temporary_password}/></FA>}
       <FA label="Status"><TgA checked={form.is_active} onChange={v => set("is_active", v)} label={form.is_active ? "Active" : "Inactive"}/></FA>
+    </DrA>
+  );
+}
+
+function PasswordChangeDrawer({ user, onClose }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!password?.trim()) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    }
+    if (!confirmPassword?.trim()) {
+      newErrors.confirmPassword = "Please confirm the password";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      await window.PulseAPI.Users.changePassword(user.id, password);
+      window.toast.success(`Password changed for ${user.name}`);
+      onClose();
+    } catch (error) {
+      window.toast.error(error.message || "Failed to change password");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isValid = password?.length >= 8 && password === confirmPassword;
+
+  return (
+    <DrA open={true} onClose={onClose} title={`Change password for ${user.name}`} width={420} footer={
+      <>
+        <BA variant="ghost" onClick={onClose} disabled={isSubmitting}>Cancel</BA>
+        <BA icon="key" onClick={handleSubmit} disabled={!isValid || isSubmitting}>
+          {isSubmitting ? "Changing..." : "Change password"}
+        </BA>
+      </>
+    }>
+      <FA label="New password" required error={errors.password} hint="At least 8 characters">
+        <InA type="password" value={password} onChange={setPassword} placeholder="••••••••" autoFocus error={!!errors.password}/>
+      </FA>
+      <FA label="Confirm new password" required error={errors.confirmPassword}>
+        <InA type="password" value={confirmPassword} onChange={setConfirmPassword} placeholder="••••••••" error={!!errors.confirmPassword}/>
+      </FA>
     </DrA>
   );
 }
