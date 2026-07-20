@@ -215,9 +215,21 @@ function ReportsCustom() {
   const exportToPDF = () => {
     if (!allIssues.length) return;
 
-    const doc = new jsPDF();
+    // Create A4 landscape PDF for better table display
+    const doc = new jsPDF('landscape', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Helper function to format dates consistently
+    const formatDate = (dateString) => {
+      if (! dateString) return '—';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
 
     // Header background
     doc.setFillColor(0, 122, 255);
@@ -227,7 +239,7 @@ function ReportsCustom() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('GuestPulse Issue Report', pageWidth / 2, 16, { align: 'center' });
+    doc.text('GuestPulse Custom Report', pageWidth / 2, 16, { align: 'center' });
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -235,7 +247,7 @@ function ReportsCustom() {
       year: 'numeric', month: 'long', day: 'numeric'
     });
     doc.text(`Generated on ${reportDate}`, pageWidth / 2, 24, { align: 'center' });
-    doc.text('Anvaya Beach Resort & Spa Bali', pageWidth / 2, 30, { align: 'center' });
+    doc.text('the ANVAYA Beach Resort Bali ', pageWidth / 2, 30, { align: 'center' });
 
     // Body
     doc.setTextColor(0, 0, 0);
@@ -246,9 +258,9 @@ function ReportsCustom() {
     // Format stay period
     const formatStayPeriod = (issue) => {
       if (issue.checkin_date && issue.checkout_date) {
-        return `${new Date(issue.checkin_date).toLocaleDateString()} - ${new Date(issue.checkout_date).toLocaleDateString()}`;
+        return `${formatDate(issue.checkin_date)} - ${formatDate(issue.checkout_date)}`;
       }
-      return issue.checkin_date ? new Date(issue.checkin_date).toLocaleDateString() : '—';
+      return issue.checkin_date ? formatDate(issue.checkin_date) : '—';
     };
 
     // Build table data
@@ -259,6 +271,7 @@ function ReportsCustom() {
         `Room: ${issue.room_number || '—'}`,
         `Stay: ${formatStayPeriod(issue)}`,
         `Nationality: ${issue.nationality || '—'}`,
+        `Issue Date: ${formatDate(issue.issue_date)}`,
         `Dept: ${issue.departments?.map(d => d.name).join(', ') || 'N/A'}`,
         `Priority: ${issue.priority} | Status: ${issue.status}`,
       ].join('\n'),
@@ -271,12 +284,20 @@ function ReportsCustom() {
       head: [['Issue Details', 'Description', 'Recovery Action']],
       body: tableData,
       theme: 'striped',
-      styles: { fontSize: 7, cellPadding: 3 },
-      headStyles: { fillColor: [0, 122, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: {
+        fontSize: 7,
+        cellPadding: 3,
+        overflow: 'linebreak'
+      },
+      headStyles: {
+        fillColor: [0, 122, 255],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
       columnStyles: {
-        0: { cellWidth: 58, valign: 'top' },
-        1: { cellWidth: 60, valign: 'top' },
-        2: { cellWidth: 52, valign: 'top' },
+        0: { cellWidth: 75, valign: 'top' }, // Issue Details - optimized width
+        1: { cellWidth: 120, valign: 'top' }, // Description - maximum space
+        2: { cellWidth: 75, valign: 'top' },  // Recovery Action - moderate space
       }
     });
 
@@ -286,11 +307,12 @@ function ReportsCustom() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Page ${i} of ${pageCount}`, 14, pageHeight - 10);
-      doc.text('GuestPulse Issue Report', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text('ANVAYA Beach Resort Bali', pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
 
-    doc.save(`GuestPulse_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`ANVAYA_Report_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const exportToExcel = () => {
@@ -437,6 +459,13 @@ function ReportsCustom() {
         dateFrom = formatDateLocal(today);
         dateTo = formatDateLocal(today);
         break;
+      case 'yesterday': {
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        dateFrom = formatDateLocal(yesterday);
+        dateTo = formatDateLocal(yesterday);
+        break;
+      }
       case 'last_7_days': {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
@@ -604,6 +633,7 @@ function ReportsCustom() {
 
     const rangeLabels = {
       today: 'Today',
+      yesterday: 'Yesterday',
       last_7_days: 'Last 7 days',
       this_week: 'This week',
       last_week: 'Last week',
@@ -634,6 +664,7 @@ function ReportsCustom() {
                 options={[
                   { value: "all", label: "All time" },
                   { value: "today", label: "Today" },
+                  { value: "yesterday", label: "Yesterday" },
                   { value: "last_7_days", label: "Last 7 days" },
                   { value: "this_week", label: "This week" },
                   { value: "last_week", label: "Last week" },
@@ -1030,8 +1061,7 @@ function ReportsLogbook() {
               <div className="text-[18px] font-semibold tracking-tight mt-1">Wednesday, 20 May 2026</div>
             </div>
             <div className="text-right text-[12px] text-muted">
-              <div>Anvaya Beach Resort &amp; Spa Bali</div>
-              <div className="mt-0.5">Shift: Sofia Reyes · 14:00 – 22:00</div>
+              <div>Anvaya Beach Resort Resort Bali</div>
             </div>
           </div>
 
