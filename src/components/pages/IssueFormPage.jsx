@@ -132,15 +132,9 @@ function IssueFormPage({ id }) {
           { label: isEdit ? `Edit #${id}` : "New issue" },
         ]}
         sticky={false}
-        actions={
-          <>
-            <BI variant="ghost" onClick={() => isEdit ? navI(`/issues/${id}`) : navI("/issues")}>Cancel</BI>
-            <BI icon={isEdit ? "check" : "plus"} loading={saving} onClick={submit}>{isEdit ? "Save changes" : "Create issue"}</BI>
-          </>
-        }
       />
 
-      <div className="max-w-[880px] px-7 pb-[60px] grid grid-cols-[1fr_320px] gap-8">
+      <div className="max-w-[880px] px-7 pb-[140px] grid grid-cols-[1fr_320px] gap-8">
         <div className="min-w-0">
           <SectionLabel>Issue</SectionLabel>
           <FI label="Title" required error={errors.title}>
@@ -251,6 +245,14 @@ function IssueFormPage({ id }) {
               options={[{ value: "", label: "Unassigned" }, ...users.map(u => ({ value: u.id, label: u.name }))]}/>
           </FI>
         </aside>
+      </div>
+
+      {/* Floating action bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-black/8 px-7 py-4 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+        <div className="max-w-[880px] mx-auto flex items-center justify-end gap-3">
+          <BI variant="ghost" onClick={() => isEdit ? navI(`/issues/${id}`) : navI("/issues")}>Cancel</BI>
+          <BI icon={isEdit ? "check" : "plus"} loading={saving} onClick={submit}>{isEdit ? "Save changes" : "Create issue"}</BI>
+        </div>
       </div>
     </div>
   );

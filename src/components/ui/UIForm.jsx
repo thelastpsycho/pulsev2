@@ -46,7 +46,7 @@ function borderClasses({ focused, error }) {
 }
 
 // ---- Input -----------------------------------------------------------------
-function Input({ value, onChange, placeholder, type = "text", icon, suffix, disabled, error, className, autoFocus, onKeyDown, name }) {
+function Input({ value, onChange, placeholder, type = "text", icon, suffix, disabled, error, className, autoFocus, onKeyDown, name, inputRef }) {
   const [focused, setFocused] = useState(false);
   return (
     <div className="relative flex items-center">
@@ -56,6 +56,7 @@ function Input({ value, onChange, placeholder, type = "text", icon, suffix, disa
         </div>
       )}
       <input
+        ref={inputRef}
         type={type} value={value ?? ""} name={name}
         onChange={e => onChange?.(e.target.value)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
@@ -123,53 +124,109 @@ function Select({ value, onChange, options, placeholder = "Select…", disabled,
 function MultiSelect({ value = [], onChange, options, placeholder = "Select…", className }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [focused, setFocused] = useState(false);
   const ref = useRef(null);
+  const inputRef = useRef(null);
+
   useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const h = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setQ("");
+      }
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
+
   const selected = options.filter(o => value.includes(o.value));
   const filtered = options.filter(o => o.label.toLowerCase().includes(q.toLowerCase()));
   const toggle = (v) => onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v]);
+  const toggleOption = (v) => {
+    toggle(v);
+    setQ("");
+  };
+
+  const close = () => {
+    setOpen(false);
+    setQ("");
+  };
 
   return (
     <div ref={ref} className={cxF("relative", className)}>
-      <div onClick={() => setOpen(o => !o)} className={cxF(
-        INPUT_BASE,
-        "min-h-[38px] py-[5px] pl-2 pr-8 cursor-pointer",
-        "flex flex-wrap gap-1 items-center",
-        open
-          ? "border border-accent shadow-[0_0_0_3px_rgba(0,122,255,0.15)]"
-          : "border border-black/10",
-      )}>
-        {selected.length === 0 && <span className="text-muted-light text-[13.5px] py-0.5 px-1">{placeholder}</span>}
+      <div
+        onClick={() => inputRef.current?.focus()}
+        className={cxF(
+          INPUT_BASE,
+          "min-h-[38px] py-[5px] pl-2 pr-8 cursor-text",
+          "flex flex-wrap gap-1 items-center",
+          borderClasses({ focused: focused || open, error: false }),
+        )}>
         {selected.map(o => (
           <span key={o.value} className="inline-flex items-center gap-[5px] py-0.5 px-2 bg-accent/10 text-accent rounded-md text-xs font-medium">
             {o.label}
-            <button onClick={(e) => { e.stopPropagation(); toggle(o.value); }} className="bg-none border-none p-0 cursor-pointer grid place-items-center text-current">
+            <button
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={e => { e.stopPropagation(); toggle(o.value); }}
+              className="bg-none border-none p-0 cursor-pointer grid place-items-center text-current">
               <IconF name="x" size={11} strokeWidth={2}/>
             </button>
           </span>
         ))}
-        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+        <input
+          ref={inputRef}
+          type="text"
+          value={q}
+          onChange={e => { setQ(e.target.value); if (!open) setOpen(true); }}
+          onFocus={() => { setFocused(true); setOpen(true); }}
+          onBlur={() => setFocused(false)}
+          onKeyDown={e => {
+            if (e.key === "Escape") {
+              close();
+              inputRef.current?.blur();
+            }
+            if (e.key === "Backspace" && q === "" && selected.length > 0) {
+              toggle(selected[selected.length - 1].value);
+            }
+          }}
+          placeholder={selected.length === 0 ? placeholder : ""}
+          className="flex-1 min-w-[80px] bg-transparent border-none outline-none py-0.5 px-1 text-sm text-text font-[inherit] tracking-body placeholder:text-muted-light"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={e => e.preventDefault()}
+          onClick={e => {
+            e.stopPropagation();
+            if (open) {
+              close();
+              inputRef.current?.blur();
+            } else {
+              setOpen(true);
+              inputRef.current?.focus();
+            }
+          }}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0 border-none bg-transparent cursor-pointer grid place-items-center"
+        >
           <IconF name="chevron-down" size={14} color={TF.mutedLight}/>
-        </div>
+        </button>
       </div>
       {open && (
         <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white rounded-[10px] p-1 shadow-popover max-h-[380px] overflow-y-auto">
-          <div className="p-1 sticky top-0 bg-white">
-            <Input value={q} onChange={setQ} icon="search" placeholder="Search…" className="py-1.5 pl-[30px] pr-2.5 text-[13px]"/>
-          </div>
           {filtered.length > 0 && (
-            <div onClick={() => {
-              const allSelected = filtered.every(o => value.includes(o.value));
-              if (allSelected) {
-                onChange(value.filter(v => !filtered.some(o => o.value === v)));
-              } else {
-                onChange([...value, ...filtered.filter(o => !value.includes(o.value)).map(o => o.value)]);
-              }
-            }} className="flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13px] font-semibold text-accent hover:bg-accent/6 mb-1">
+            <div
+              onMouseDown={e => {
+                e.preventDefault();
+                const allSelected = filtered.every(o => value.includes(o.value));
+                if (allSelected) {
+                  onChange(value.filter(v => !filtered.some(o => o.value === v)));
+                } else {
+                  onChange([...value, ...filtered.filter(o => !value.includes(o.value)).map(o => o.value)]);
+                }
+                setQ("");
+              }}
+              className="flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13px] font-semibold text-accent hover:bg-accent/6 mb-1">
               <div className="w-4 h-4 rounded grid place-items-center shrink-0 border-[1.5px] border-accent bg-transparent">
                 {filtered.every(o => value.includes(o.value)) && <IconF name="check" size={10} color="#007aff" strokeWidth={3}/>}
               </div>
@@ -180,10 +237,13 @@ function MultiSelect({ value = [], onChange, options, placeholder = "Select…",
           {filtered.map(o => {
             const isSel = value.includes(o.value);
             return (
-              <div key={o.value} onClick={() => toggle(o.value)} className={cxF(
-                "flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13.5px]",
-                isSel ? "bg-accent/6" : "bg-transparent hover:bg-black/3",
-              )}>
+              <div
+                key={o.value}
+                onMouseDown={e => { e.preventDefault(); toggleOption(o.value); }}
+                className={cxF(
+                  "flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13.5px]",
+                  isSel ? "bg-accent/6" : "bg-transparent hover:bg-black/3",
+                )}>
                 <div className={cxF(
                   "w-4 h-4 rounded grid place-items-center shrink-0",
                   isSel ? "border-[1.5px] border-accent bg-accent" : "border-[1.5px] border-black/20 bg-transparent",
@@ -204,48 +264,91 @@ function MultiSelect({ value = [], onChange, options, placeholder = "Select…",
 function SearchableSelect({ value, onChange, options, placeholder = "Select…", disabled, error, className }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [focused, setFocused] = useState(false);
   const ref = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const h = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setQ("");
+      }
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
   const selectedOption = options.find(o => o.value === value);
   const filtered = options.filter(o => o.label.toLowerCase().includes(q.toLowerCase()));
+  const inputValue = open ? q : (selectedOption?.label ?? "");
+
+  const close = () => {
+    setOpen(false);
+    setQ("");
+  };
+
+  const selectOption = (optionValue) => {
+    onChange(optionValue);
+    close();
+    inputRef.current?.blur();
+  };
 
   return (
     <div ref={ref} className={cxF("relative", className)}>
-      <div
-        onClick={() => !disabled && setOpen(o => !o)}
-        className={cxF(
-          INPUT_BASE,
-          "min-h-[38px] py-[9px] px-3 pr-8",
-          "flex items-center justify-between",
-          disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-          (open || error) && borderClasses({ focused: open, error }),
-          !open && !error && "border border-black/10",
-        )}>
-        <span className={cxF("text-[14px]", selectedOption ? "text-text" : "text-muted-light")}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+      <div className={cxF(
+        INPUT_BASE,
+        "min-h-[38px] py-0 px-0 pr-8",
+        "flex items-center",
+        disabled ? "opacity-60 cursor-not-allowed" : "cursor-text",
+        borderClasses({ focused: focused || open, error }),
+      )}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={e => { setQ(e.target.value); if (!open) setOpen(true); }}
+          onFocus={() => { if (!disabled) { setFocused(true); setOpen(true); } }}
+          onBlur={() => setFocused(false)}
+          onKeyDown={e => {
+            if (e.key === "Escape") {
+              close();
+              inputRef.current?.blur();
+            }
+          }}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="flex-1 min-w-0 bg-transparent border-none outline-none py-[9px] pl-3 pr-0 text-sm text-text font-[inherit] tracking-body placeholder:text-muted-light disabled:cursor-not-allowed"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled}
+          onMouseDown={e => e.preventDefault()}
+          onClick={() => {
+            if (disabled) return;
+            if (open) {
+              close();
+              inputRef.current?.blur();
+            } else {
+              setOpen(true);
+              inputRef.current?.focus();
+            }
+          }}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0 border-none bg-transparent cursor-pointer disabled:cursor-not-allowed grid place-items-center"
+        >
           <IconF name="chevron-down" size={14} color={TF.mutedLight}/>
-        </div>
+        </button>
       </div>
       {open && !disabled && (
         <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white rounded-[10px] p-1 shadow-popover max-h-[380px] overflow-y-auto">
-          <div className="p-1 sticky top-0 bg-white">
-            <Input value={q} onChange={setQ} icon="search" placeholder="Search…" className="py-1.5 pl-[30px] pr-2.5 text-[13px]"/>
-          </div>
           {filtered.length === 0 && <div className="py-4 px-3 text-center text-muted-light text-[13px]">No matches</div>}
           {filtered.map(o => {
             const isSelected = value === o.value;
             return (
               <div
                 key={o.value}
-                onClick={() => { onChange(o.value); setOpen(false); }}
+                onMouseDown={e => { e.preventDefault(); selectOption(o.value); }}
                 className={cxF(
                   "flex items-center gap-2 py-2 px-2.5 rounded-md cursor-pointer text-[13.5px]",
                   isSelected ? "bg-accent/6" : "bg-transparent hover:bg-black/3",
