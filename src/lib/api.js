@@ -120,7 +120,7 @@ const CommentsAPI = {
 // ---- Departments -----------------------------------------------------------
 const DepartmentsAPI = {
   async list() {
-    return fetchAPI('/departments');
+    return fetchAPI('/departments?per_page=200');
   },
   async create(payload) {
     return fetchAPI('/departments', {
@@ -142,7 +142,7 @@ const DepartmentsAPI = {
 // ---- Issue Types & Categories ---------------------------------------------
 const IssueTypesAPI = {
   async list() {
-    return fetchAPI('/issue-types');
+    return fetchAPI('/issue-types?per_page=200');
   },
   async create(payload) {
     return fetchAPI('/issue-types', {
@@ -162,14 +162,14 @@ const IssueTypesAPI = {
 };
 const CategoriesAPI = {
   async list() {
-    return fetchAPI('/issue-categories');
+    return fetchAPI('/issue-categories?per_page=200');
   }
 };
 
 // ---- Users & Roles ---------------------------------------------------------
 const UsersAPI = {
   async list() {
-    return fetchAPI('/users');
+    return fetchAPI('/users?per_page=200');
   },
   async get(id) {
     return fetchAPI(`/users/${id}`);

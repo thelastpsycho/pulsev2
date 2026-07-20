@@ -235,7 +235,7 @@ export const DepartmentsAPI = {
    * List all departments
    */
   async list(): Promise<ApiResponse<Department[]>> {
-    return fetchAPI('/departments');
+    return fetchAPI('/departments?per_page=200');
   },
 
   /**
@@ -282,7 +282,7 @@ export const IssueTypesAPI = {
    * List all issue types
    */
   async list(): Promise<ApiResponse<IssueType[]>> {
-    return fetchAPI('/issue-types');
+    return fetchAPI('/issue-types?per_page=200');
   },
 
   /**
@@ -318,7 +318,7 @@ export const CategoriesAPI = {
    * List all issue categories
    */
   async list(): Promise<ApiResponse<IssueCategory[]>> {
-    return fetchAPI('/issue-categories');
+    return fetchAPI('/issue-categories?per_page=200');
   },
 };
 
@@ -340,7 +340,7 @@ export const UsersAPI = {
    * List all users
    */
   async list(): Promise<ApiResponse<User[]>> {
-    return fetchAPI('/users');
+    return fetchAPI('/users?per_page=200');
   },
 
   /**

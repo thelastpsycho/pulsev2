@@ -157,7 +157,7 @@ function MultiSelect({ value = [], onChange, options, placeholder = "Select…",
         </div>
       </div>
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white rounded-[10px] p-1 shadow-popover max-h-[280px] overflow-y-auto">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white rounded-[10px] p-1 shadow-popover max-h-[380px] overflow-y-auto">
           <div className="p-1 sticky top-0 bg-white">
             <Input value={q} onChange={setQ} icon="search" placeholder="Search…" className="py-1.5 pl-[30px] pr-2.5 text-[13px]"/>
           </div>
@@ -235,7 +235,7 @@ function SearchableSelect({ value, onChange, options, placeholder = "Select…",
         </div>
       </div>
       {open && !disabled && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white rounded-[10px] p-1 shadow-popover max-h-[280px] overflow-y-auto">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-white rounded-[10px] p-1 shadow-popover max-h-[380px] overflow-y-auto">
           <div className="p-1 sticky top-0 bg-white">
             <Input value={q} onChange={setQ} icon="search" placeholder="Search…" className="py-1.5 pl-[30px] pr-2.5 text-[13px]"/>
           </div>
