@@ -105,6 +105,20 @@ export const AuthAPI = {
   async me(): Promise<ApiResponse<{ user: User }>> {
     return fetchAPI('/me');
   },
+
+  /**
+   * Change your own password
+   */
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+    return fetchAPI('/me/password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: newPassword
+      }),
+    });
+  },
 };
 
 // ============================================================================

@@ -561,6 +561,39 @@ function ProfilePage({ user }) {
 function ProfileForm({ user }) {
   const [name, setName] = useState(user?.name);
   const [email, setEmail] = useState(user?.email);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!name?.trim()) {
+      newErrors.name = "Name is required";
+    }
+    if (!email?.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Invalid email format";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      await window.PulseAPI.Users.update(user.id, { name, email });
+      window.toast.success("Profile updated successfully");
+    } catch (error) {
+      window.toast.error(error.message || "Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isValid = name?.trim() && email?.trim() && /\S+@\S+\.\S+/.test(email);
+
   return (
     <CA>
       <div style={{ padding: 22 }}>
@@ -571,11 +604,17 @@ function ProfileForm({ user }) {
             <div style={{ fontSize: 11.5, color: TA.mutedLight, marginTop: 6 }}>JPG or PNG. Max 2 MB.</div>
           </div>
         </div>
-        <FA label="Name" required><InA value={name} onChange={setName}/></FA>
-        <FA label="Email" required><InA value={email} onChange={setEmail} icon="mail" type="email"/></FA>
+        <FA label="Name" required error={errors.name}>
+          <InA value={name} onChange={setName} error={!!errors.name}/>
+        </FA>
+        <FA label="Email" required error={errors.email}>
+          <InA value={email} onChange={setEmail} icon="mail" type="email" error={!!errors.email}/>
+        </FA>
         <FA label="Role" hint="Contact your General Manager to change."><InA value={user?.roles?.[0]?.name || ""} disabled/></FA>
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-          <BA icon="check" onClick={() => window.toast.success("Profile updated")}>Save changes</BA>
+          <BA icon="check" onClick={handleSubmit} disabled={!isValid || isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save changes"}
+          </BA>
         </div>
       </div>
     </CA>
@@ -583,14 +622,73 @@ function ProfileForm({ user }) {
 }
 
 function PasswordForm() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!currentPassword?.trim()) {
+      newErrors.currentPassword = "Current password is required";
+    }
+    if (!newPassword?.trim()) {
+      newErrors.newPassword = "New password is required";
+    } else if (newPassword.length < 12) {
+      newErrors.newPassword = "Password must be at least 12 characters";
+    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword)) {
+      newErrors.newPassword = "Password must include both letters and numbers";
+    }
+    if (!confirmPassword?.trim()) {
+      newErrors.confirmPassword = "Please confirm your new password";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      await window.PulseAPI.Auth.changePassword(currentPassword, newPassword);
+      window.toast.success("Password updated successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setErrors({});
+    } catch (error) {
+      window.toast.error(error.message || "Failed to update password");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isValid = currentPassword?.length >= 1 &&
+                  newPassword?.length >= 12 &&
+                  confirmPassword?.length >= 12 &&
+                  newPassword === confirmPassword &&
+                  /(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword);
+
   return (
     <CA>
       <div style={{ padding: 22 }}>
-        <FA label="Current password" required><InA type="password" icon="key" placeholder="••••••••"/></FA>
-        <FA label="New password" required hint="At least 12 characters, with letters and numbers."><InA type="password" icon="key" placeholder="••••••••"/></FA>
-        <FA label="Confirm new password" required><InA type="password" icon="key" placeholder="••••••••"/></FA>
+        <FA label="Current password" required error={errors.currentPassword}>
+          <InA type="password" icon="key" value={currentPassword} onChange={setCurrentPassword} placeholder="••••••••" error={!!errors.currentPassword} autoFocus/>
+        </FA>
+        <FA label="New password" required hint="At least 12 characters, with letters and numbers." error={errors.newPassword}>
+          <InA type="password" icon="key" value={newPassword} onChange={setNewPassword} placeholder="••••••••" error={!!errors.newPassword}/>
+        </FA>
+        <FA label="Confirm new password" required error={errors.confirmPassword}>
+          <InA type="password" icon="key" value={confirmPassword} onChange={setConfirmPassword} placeholder="••••••••" error={!!errors.confirmPassword}/>
+        </FA>
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-          <BA icon="key" onClick={() => window.toast.success("Password updated")}>Update password</BA>
+          <BA icon="key" onClick={handleSubmit} disabled={!isValid || isSubmitting}>
+            {isSubmitting ? "Updating..." : "Update password"}
+          </BA>
         </div>
       </div>
     </CA>

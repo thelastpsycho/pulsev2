@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 
 // Library files
-import './lib/api.js'
+import './lib/api.ts'
 import './lib/shortcuts-init.js'
 
 // UI Components
