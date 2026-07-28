@@ -438,7 +438,7 @@ function MobileIssueDetailPage({ issueId }) {
         <Card>
           <CardHeader title="Description" />
           <div className="px-4 pb-4">
-            <div className="text-[14px] leading-relaxed text-text whitespace-pre-wrap">
+            <div className="text-[14px] leading-relaxed text-text preserve-whitespace">
               {issue.description || <span className="text-muted-light italic">No description provided.</span>}
             </div>
           </div>
@@ -453,7 +453,7 @@ function MobileIssueDetailPage({ issueId }) {
                 <div className="w-7 h-7 rounded-full bg-success grid place-items-center shrink-0">
                   <Icon name="gift" size={14} color="#fff" strokeWidth={2} />
                 </div>
-                <div className="flex-1 text-sm leading-relaxed text-text">
+                <div className="flex-1 text-sm leading-relaxed text-text preserve-whitespace">
                   {issue.recovery}
                   {issue.recovery_cost > 0 && (
                     <div className="mt-1 text-[12px] text-muted">Cost: IDR {issue.recovery_cost.toLocaleString()}</div>
@@ -556,7 +556,7 @@ function TimelineEntry({ icon, color, actor, at, text, timeAgo }) {
           <span className="font-semibold">{actor}</span>
           <span className="text-muted"> · {timeAgo(at)}</span>
         </div>
-        {text && <div className="text-sm text-text-secondary mt-0.75 leading-relaxed whitespace-pre-wrap">{text}</div>}
+        {text && <div className="text-sm text-text-secondary mt-0.75 leading-relaxed preserve-whitespace">{text}</div>}
       </div>
     </div>
   );

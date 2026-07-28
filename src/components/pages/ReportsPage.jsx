@@ -1073,7 +1073,7 @@ function ReportsLogbook() {
               </div>
               <div className="text-[12.5px] text-muted mb-1">{i.location} · {i.name || "—"} · Priority: {i.priority}</div>
               <div className="text-[13px] text-text leading-normal">{i.description}</div>
-              {i.recovery && <div className="mt-1.5 text-[12.5px] text-success italic">Recovery: {i.recovery}</div>}
+              {i.recovery && <div className="mt-1.5 text-[12.5px] text-success italic preserve-whitespace">Recovery: {i.recovery}</div>}
             </div>
           ))}
         </div>

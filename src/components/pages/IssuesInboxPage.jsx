@@ -564,7 +564,7 @@ function IssueDetailPaneInbox({ id, onChange }) {
         {/* Description */}
         <div className="mb-7">
           <SectionTitleIB>Description</SectionTitleIB>
-          <div className="text-[14.5px] leading-1.6 text-text whitespace-pre-wrap">
+          <div className="text-[14.5px] leading-1.6 text-text preserve-whitespace">
             {issue.description || <span className="text-muted-light italic">No description.</span>}
           </div>
         </div>
@@ -577,7 +577,7 @@ function IssueDetailPaneInbox({ id, onChange }) {
               <div className="w-7 h-7 rounded-full bg-success grid place-items-center shrink-0">
                 <IIB name="gift" size={14} color="#fff" strokeWidth={2}/>
               </div>
-              <div className="flex-1 text-sm leading-[1.55] text-text">
+              <div className="flex-1 text-sm leading-[1.55] text-text preserve-whitespace">
                 {issue.recovery}
                 {issue.recovery_cost > 0 && (
                   <div className="mt-1 text-[12.5px] text-muted">Cost: IDR {issue.recovery_cost.toLocaleString()}</div>
@@ -673,7 +673,7 @@ function TimelineEntryIB({ icon, color, actor, at, text }) {
           <span className="font-semibold">{actor}</span>
           <span className="text-muted"> · {timeAgoIB(at)}</span>
         </div>
-        <div className="text-sm text-text-secondary mt-0.75 leading-1.5 whitespace-pre-wrap">{text}</div>
+        <div className="text-sm text-text-secondary mt-0.75 leading-1.5 preserve-whitespace">{text}</div>
       </div>
     </div>
   );

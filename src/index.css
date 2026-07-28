@@ -116,6 +116,12 @@ a {
   text-decoration: none;
 }
 
+/* Preserve line breaks in text content */
+.preserve-whitespace {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 /* Scrollbars - keep custom styling */
 ::-webkit-scrollbar {
   width: 10px;
