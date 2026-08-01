@@ -216,7 +216,7 @@ function ChatPage({ user }) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: chatMessages,
         tools: TOOLS,
         tool_choice: 'auto',
