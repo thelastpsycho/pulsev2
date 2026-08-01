@@ -34,13 +34,14 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'summary',
-      description: 'Get issue statistics for a time period: totals, open/closed/urgent counts, average resolution time.',
+      description: 'Get issue statistics for a time period (totals, open/closed/urgent counts, average resolution time) plus the individual issues in that period, each with its description and recovery action, for narrating what actually happened.',
       parameters: {
         type: 'object',
         properties: {
           period: { type: 'string', enum: ['today', 'yesterday', 'last_week', 'this_week', 'last_month', 'this_month'], description: 'Time period for the summary' },
           start_date: { type: 'string', description: 'Custom start date (YYYY-MM-DD), overrides period' },
           end_date: { type: 'string', description: 'Custom end date (YYYY-MM-DD), overrides period' },
+          limit: { type: 'integer', description: 'Max individual issues to return for narration (default 25, max 50)' },
         },
       },
     },
@@ -107,9 +108,11 @@ function getSystemPrompt() {
   const now = new Date();
   const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
   const readable = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  return `You are the GuestPulse Assistant, a helpful hotel operations assistant. You answer questions about issues, rooms, guests, and departments using the tools available to you. Always call a tool when the user asks for data you don't already have. Respond naturally and concisely, highlighting anything that needs attention (urgent issues, low closure rates, etc). If a tool returns no results, say so plainly rather than guessing.
+  return `You are the GuestPulse Assistant, a helpful hotel operations assistant. You answer questions about issues, rooms, guests, and departments using the tools available to you. Always call a tool when the user asks for data you don't already have. If a tool returns no results, say so plainly rather than guessing.
 
-Today's date is ${today} (${readable}). Use this as "now" for any relative date the user mentions (e.g. "yesterday", "last 3 days", "this week"). When the request matches one of the summary tool's period options (today, yesterday, last_week, this_week, last_month, this_month), use that. Otherwise compute start_date and end_date yourself (YYYY-MM-DD, relative to today's date above) rather than guessing a period or year.`;
+Today's date is ${today} (${readable}). Use this as "now" for any relative date the user mentions (e.g. "yesterday", "last 3 days", "this week"). When the request matches one of the summary tool's period options (today, yesterday, last_week, this_week, last_month, this_month), use that. Otherwise compute start_date and end_date yourself (YYYY-MM-DD, relative to today's date above) rather than guessing a period or year.
+
+When asked to summarize issues over a period, do NOT just recite the aggregate counts. Use the "issues" array the summary tool returns (each has a date, room, guest name, description, and recovery action) and narrate what actually happened, one short sentence per issue, e.g. "On Jul 31, Mr. Brown reported the air conditioning wasn't working; engineering came to the room and fixed it." Base each sentence only on that issue's description and recovery text — don't invent details. Group naturally if there are many similar issues. Only lead with the raw numbers (total/open/closed/urgent) if the user explicitly asks for stats, or mention them briefly at the end. If "issues_returned" is less than the total issue count, note that you're covering the most recent ones.`;
 }
 
 const SUGGESTIONS = [
