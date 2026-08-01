@@ -103,7 +103,14 @@ const TOOLS = [
   },
 ];
 
-const SYSTEM_PROMPT = `You are the GuestPulse Assistant, a helpful hotel operations assistant. You answer questions about issues, rooms, guests, and departments using the tools available to you. Always call a tool when the user asks for data you don't already have. Respond naturally and concisely, highlighting anything that needs attention (urgent issues, low closure rates, etc). If a tool returns no results, say so plainly rather than guessing.`;
+function getSystemPrompt() {
+  const now = new Date();
+  const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const readable = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return `You are the GuestPulse Assistant, a helpful hotel operations assistant. You answer questions about issues, rooms, guests, and departments using the tools available to you. Always call a tool when the user asks for data you don't already have. Respond naturally and concisely, highlighting anything that needs attention (urgent issues, low closure rates, etc). If a tool returns no results, say so plainly rather than guessing.
+
+Today's date is ${today} (${readable}). Use this as "now" for any relative date the user mentions (e.g. "yesterday", "last 3 days", "this week"). When the request matches one of the summary tool's period options (today, yesterday, last_week, this_week, last_month, this_month), use that. Otherwise compute start_date and end_date yourself (YYYY-MM-DD, relative to today's date above) rather than guessing a period or year.`;
+}
 
 const SUGGESTIONS = [
   'Show me the summary last week',
@@ -165,6 +172,15 @@ const LOADING_MESSAGES = [
   'Almost done, probably, maybe…',
 ];
 
+function formatMsgTimestamp(date) {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 function ChatPage({ user }) {
   const [messages, setMessages] = useState([
     { id: 'welcome', role: 'assistant', content: `Hi ${user?.name || 'there'}! Ask me about issues, rooms, guests, or department performance.`, at: new Date() },
@@ -225,7 +241,7 @@ function ChatPage({ user }) {
 
     try {
       const chatMessages = [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: getSystemPrompt() },
         ...history,
         { role: 'user', content: text },
       ];
@@ -285,11 +301,14 @@ function ChatPage({ user }) {
           <div key={m.id} className={cxC('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
             <div className={cxC('max-w-[560px] flex gap-2', m.role === 'user' && 'flex-row-reverse')}>
               {m.role === 'assistant' && <AvatarC name="AI" size={26} />}
-              <CardC className={cxC('px-3.5 py-2.5', m.role === 'user' ? 'bg-accent! text-white! border-none' : m.isError && 'border-danger/30')}>
-                <div className={cxC('text-[13.5px] leading-[1.5] whitespace-pre-line', m.role === 'user' ? 'text-white' : m.isError ? 'text-danger' : 'text-text')}>
-                  {m.content}
-                </div>
-              </CardC>
+              <div className={cxC('flex flex-col gap-1', m.role === 'user' && 'items-end')}>
+                <CardC className={cxC('px-3.5 py-2.5', m.role === 'user' ? 'bg-accent! text-white! border-none' : m.isError && 'border-danger/30')}>
+                  <div className={cxC('text-[13.5px] leading-[1.5] whitespace-pre-line', m.role === 'user' ? 'text-white' : m.isError ? 'text-danger' : 'text-text')}>
+                    {m.content}
+                  </div>
+                </CardC>
+                <div className="text-[11px] text-muted-light px-0.5">{formatMsgTimestamp(m.at)}</div>
+              </div>
             </div>
           </div>
         ))}
