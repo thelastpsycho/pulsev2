@@ -27,6 +27,7 @@ import './components/pages/IssueFormPage.jsx'
 import './components/pages/IssuesInboxPage.jsx'
 import './components/pages/ReportsPage.jsx'
 import './components/pages/AdminPages.jsx'
+import './components/pages/ChatPage.jsx'
 
 // Reports
 import './components/reports/SimpleReportBuilder.jsx'

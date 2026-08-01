@@ -109,6 +109,8 @@ function App() {
     page = <window.PageStatistics/>;
   } else if (path === "/graphs") {
     page = <window.PageGraphs/>;
+  } else if (path === "/chat") {
+    page = can(user, "ai.chat.view") ? <window.PageChat user={user}/> : <NotFound/>;
   } else if (path === "/admin/users") {
     page = can(user, "admin.users.view") ? <window.PageAdminUsers/> : <NotFound/>;
   } else if (path === "/admin/roles") {

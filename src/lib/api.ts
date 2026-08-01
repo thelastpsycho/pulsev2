@@ -538,6 +538,22 @@ export const ActivityAPI = {
 };
 
 // ============================================================================
+// AI Chat API
+// ============================================================================
+
+export const ChatAPI = {
+  /**
+   * Call a backend AI tool endpoint (summary, room-search, guest-search, department-stats, urgent-issues)
+   */
+  async callTool(name: string, args: Record<string, any> = {}): Promise<any> {
+    return fetchAPI(`/ai/tools/${name}`, {
+      method: 'POST',
+      body: JSON.stringify(args),
+    });
+  },
+};
+
+// ============================================================================
 // Window API Export
 // ============================================================================
 
@@ -556,5 +572,6 @@ if (typeof window !== 'undefined') {
     Stats: StatsAPI,
     Reports: ReportsAPI,
     Activity: ActivityAPI,
+    Chat: ChatAPI,
   };
 }

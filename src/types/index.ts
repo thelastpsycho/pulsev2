@@ -502,6 +502,7 @@ declare global {
       Stats: typeof import('@/lib/api').StatsAPI;
       Reports: typeof import('@/lib/api').ReportsAPI;
       Activity: typeof import('@/lib/api').ActivityAPI;
+      Chat: typeof import('@/lib/api').ChatAPI;
     };
     PulseUI: {
       TOKENS: typeof import('@/components/ui/UIPrimitives').TOKENS;

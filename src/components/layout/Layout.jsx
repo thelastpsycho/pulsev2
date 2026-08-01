@@ -100,10 +100,15 @@ function Sidebar({ user, counts, collapsed }) {
     { to: "/admin/issue-types", label: "Issue Types", icon: "tags", permission: "admin.issue-types.view" },
   ].filter(item => can(user, item.permission));
 
+  const chatItems = [
+    { to: "/chat", label: "AI Assistant", icon: "message", permission: "ai.chat.view" },
+  ].filter(item => can(user, item.permission));
+
   const NAV = [
     { section: "main", items: [
       { to: "/", label: "Dashboard", icon: "dashboard", match: ["/"] },
       { to: "/issues", label: "Issues", icon: "inbox", match: ["/issues", "/issues/"], count: counts?.openIssues },
+      ...chatItems,
     ]},
     { section: "reports", title: "Reports", items: [
       { to: "/reports", label: "Reports", icon: "report" },
