@@ -312,11 +312,11 @@ function ChatPage({ user }) {
         rounds++;
       }
 
-      const { text, chart } = extractChart(choice.message.content || "I couldn't find an answer to that.");
+      const { text: replyText, chart } = extractChart(choice.message.content || "I couldn't find an answer to that.");
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: text,
+        content: replyText,
         chart,
         at: new Date(),
       }]);
