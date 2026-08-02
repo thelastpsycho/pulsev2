@@ -55,3 +55,6 @@ coverage
 *.tmp
 *.temp
 .vercel
+
+# graphify - generated knowledge graph output
+graphify-out

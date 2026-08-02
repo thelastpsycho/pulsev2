@@ -1,24 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { getPulseUI, getPulseLayout } from '../../lib/pulse-globals.js';
+import { MiniChart } from '../ui/MiniChart.jsx';
 // ============================================================================
 // AI Chat Assistant — natural-language queries over issues/rooms/guests/departments.
 // OpenAI is called directly from the browser (VITE_OPENAI_API_KEY); tool calls
 // are proxied through window.PulseAPI.Chat to the backend's /api/ai/tools/{name}.
 // ============================================================================
-
-const getPulseUI = () => {
-  if (typeof window !== 'undefined' && window.PulseUI) {
-    return window.PulseUI;
-  }
-  return { Icon: () => null, Avatar: () => null, Button: () => null, Card: () => null,
-           EmptyState: () => null, TOKENS: {}, cx: (...xs) => xs.filter(Boolean).join(' ') };
-};
-
-const getPulseLayout = () => {
-  if (typeof window !== 'undefined' && window.PulseLayout) {
-    return window.PulseLayout;
-  }
-  return { PageHeader: () => null };
-};
 
 const IconC = getPulseUI().Icon;
 const AvatarC = getPulseUI().Avatar;
@@ -112,7 +100,9 @@ function getSystemPrompt() {
 
 Today's date is ${today} (${readable}). Use this as "now" for any relative date the user mentions (e.g. "yesterday", "last 3 days", "this week"). When the request matches one of the summary tool's period options (today, yesterday, last_week, this_week, last_month, this_month), use that. Otherwise compute start_date and end_date yourself (YYYY-MM-DD, relative to today's date above) rather than guessing a period or year.
 
-When asked to summarize issues over a period, do NOT just recite the aggregate counts. Use the "issues" array the summary tool returns (each has a date, room, guest name, description, and recovery action) and narrate what actually happened, one short sentence per issue, e.g. "On Jul 31, Mr. Brown reported the air conditioning wasn't working; engineering came to the room and fixed it." Base each sentence only on that issue's description and recovery text — don't invent details. Group naturally if there are many similar issues. Only lead with the raw numbers (total/open/closed/urgent) if the user explicitly asks for stats, or mention them briefly at the end. If "issues_returned" is less than the total issue count, note that you're covering the most recent ones.`;
+When asked to summarize issues over a period, do NOT just recite the aggregate counts. Use the "issues" array the summary tool returns (each has a date, room, guest name, description, and recovery action) and narrate what actually happened, one short sentence per issue, e.g. "On Jul 31, Mr. Brown reported the air conditioning wasn't working; engineering came to the room and fixed it." Base each sentence only on that issue's description and recovery text — don't invent details. Group naturally if there are many similar issues. Only lead with the raw numbers (total/open/closed/urgent) if the user explicitly asks for stats, or mention them briefly at the end. If "issues_returned" is less than the total issue count, note that you're covering the most recent ones.
+
+When a tool result contains 3 or more comparable numeric values across categories (e.g. issue counts per department, or a priority breakdown), include a chart alongside your short prose answer. Emit it as its own fenced block, exactly: \`\`\`chart on its own line, then a single-line JSON object, then \`\`\` on its own line. Schema: {"type": "bar" | "donut", "title": "short title", "data": [{"label": "Housekeeping", "value": 12}, ...]}. Use "bar" for ranked comparisons and "donut" for share-of-total questions. Do not invent a chart for a single number, a yes/no answer, or a list of individual issues (room-search, guest-search, urgent-issues) — those read better as prose or a narrated list. Never put chart data inside the prose text itself; the chart block is separate from and in addition to your narration.`;
 }
 
 const SUGGESTIONS = [
@@ -121,6 +111,10 @@ const SUGGESTIONS = [
   'Which department has the most issues?',
   'Show me urgent issues',
 ];
+
+// Caps how many times the model can chain tool calls in one turn before we
+// force a final answer, so a confused model can't loop indefinitely.
+const MAX_TOOL_ROUNDS = 5;
 
 const LOADING_MESSAGES = [
   'Hacking the FBI mainframe…',
@@ -174,6 +168,52 @@ const LOADING_MESSAGES = [
   'Checking the crystal ball for late checkout…',
   'Almost done, probably, maybe…',
 ];
+
+// Compact overrides so markdown elements fit the chat bubble's type scale
+// instead of react-markdown's default block spacing.
+const MARKDOWN_COMPONENTS = {
+  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc pl-4 mb-2 last:mb-0 space-y-0.5">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 last:mb-0 space-y-0.5">{children}</ol>,
+  li: ({ children }) => <li>{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-accent">{children}</a>,
+  code: ({ children }) => <code className="px-1 py-0.5 rounded bg-black/6 text-[12.5px] font-mono">{children}</code>,
+  pre: ({ children }) => <pre className="bg-black/6 rounded-lg p-2.5 overflow-x-auto text-[12.5px] font-mono mb-2 last:mb-0">{children}</pre>,
+  h1: ({ children }) => <div className="font-semibold text-[14.5px] mb-1">{children}</div>,
+  h2: ({ children }) => <div className="font-semibold text-[14px] mb-1">{children}</div>,
+  h3: ({ children }) => <div className="font-semibold text-[13.5px] mb-1">{children}</div>,
+};
+
+const CHART_BLOCK_RE = /```chart\s*([\s\S]*?)```/;
+
+// Pulls a ```chart {...}``` block (if any) out of the model's reply and
+// validates it into a {type, title, data} spec MiniChart can render.
+// Returns the reply with the block stripped, plus the parsed chart or null.
+function extractChart(content) {
+  const match = content.match(CHART_BLOCK_RE);
+  if (!match) return { text: content, chart: null };
+
+  const text = content.replace(CHART_BLOCK_RE, '').trim();
+  try {
+    const parsed = JSON.parse(match[1]);
+    const data = Array.isArray(parsed.data)
+      ? parsed.data.filter(d => d && typeof d.label === 'string' && Number.isFinite(d.value))
+      : [];
+    if (!data.length) return { text, chart: null };
+    return {
+      text,
+      chart: {
+        type: ['bar', 'donut', 'line'].includes(parsed.type) ? parsed.type : 'bar',
+        title: typeof parsed.title === 'string' ? parsed.title : undefined,
+        data,
+      },
+    };
+  } catch {
+    return { text, chart: null };
+  }
+}
 
 function formatMsgTimestamp(date) {
   if (!date) return '';
@@ -249,10 +289,12 @@ function ChatPage({ user }) {
         { role: 'user', content: text },
       ];
 
-      let data = await callOpenAI(chatMessages);
+      let workingMessages = chatMessages;
+      let data = await callOpenAI(workingMessages);
       let choice = data.choices[0];
+      let rounds = 0;
 
-      if (choice.message.tool_calls?.length) {
+      while (choice.message.tool_calls?.length && rounds < MAX_TOOL_ROUNDS) {
         const toolResults = await Promise.all(choice.message.tool_calls.map(async (toolCall) => {
           const args = JSON.parse(toolCall.function.arguments || '{}');
           let content;
@@ -264,14 +306,18 @@ function ChatPage({ user }) {
           return { role: 'tool', tool_call_id: toolCall.id, content };
         }));
 
-        data = await callOpenAI([...chatMessages, choice.message, ...toolResults]);
+        workingMessages = [...workingMessages, choice.message, ...toolResults];
+        data = await callOpenAI(workingMessages);
         choice = data.choices[0];
+        rounds++;
       }
 
+      const { text, chart } = extractChart(choice.message.content || "I couldn't find an answer to that.");
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: choice.message.content || "I couldn't find an answer to that.",
+        content: text,
+        chart,
         at: new Date(),
       }]);
     } catch (err) {
@@ -306,9 +352,12 @@ function ChatPage({ user }) {
               {m.role === 'assistant' && <AvatarC name="AI" size={26} />}
               <div className={cxC('flex flex-col gap-1', m.role === 'user' && 'items-end')}>
                 <CardC className={cxC('px-3.5 py-2.5', m.role === 'user' ? 'bg-accent! text-white! border-none' : m.isError && 'border-danger/30')}>
-                  <div className={cxC('text-[13.5px] leading-[1.5] whitespace-pre-line', m.role === 'user' ? 'text-white' : m.isError ? 'text-danger' : 'text-text')}>
-                    {m.content}
+                  <div className={cxC('text-[13.5px] leading-[1.5]', m.role === 'user' ? 'text-white whitespace-pre-line' : m.isError ? 'text-danger whitespace-pre-line' : 'text-text')}>
+                    {m.role === 'assistant' && !m.isError
+                      ? <ReactMarkdown components={MARKDOWN_COMPONENTS}>{m.content}</ReactMarkdown>
+                      : m.content}
                   </div>
+                  {m.chart && <MiniChart type={m.chart.type} title={m.chart.title} data={m.chart.data} />}
                 </CardC>
                 <div className="text-[11px] text-muted-light px-0.5">{formatMsgTimestamp(m.at)}</div>
               </div>
