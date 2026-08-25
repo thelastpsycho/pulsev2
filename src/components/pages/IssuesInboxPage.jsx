@@ -564,7 +564,7 @@ function IssueDetailPaneInbox({ id, onChange }) {
         {/* Description */}
         <div className="mb-7">
           <SectionTitleIB>Description</SectionTitleIB>
-          <div className="text-[14.5px] leading-1.6 text-text preserve-whitespace">
+          <div className="text-[14.5px] leading-[1.6] text-text preserve-whitespace">
             {issue.description || <span className="text-muted-light italic">No description.</span>}
           </div>
         </div>
@@ -637,7 +637,7 @@ function IssueDetailPaneInbox({ id, onChange }) {
               <textarea
                 value={comment} onChange={(e) => setComment(e.target.value)}
                 placeholder="Add an internal note or update…" rows={2}
-                className="w-full border-none outline-none resize-none font-inherit text-sm text-text tracking-[-0.003em] bg-transparent leading-1.5 p-0"
+                className="w-full border-none outline-none resize-none font-inherit text-sm text-text tracking-[-0.003em] bg-transparent leading-[1.5] p-0"
               />
               <div className="flex justify-between items-center mt-2">
                 <div className="flex gap-1">
@@ -669,11 +669,11 @@ function TimelineEntryIB({ icon, color, actor, at, text }) {
         <IIB name={icon} size={11} color="#fff" strokeWidth={2.4}/>
       </div>
       <div>
-        <div className="text-sm text-text leading-1.45">
+        <div className="text-sm text-text leading-[1.45]">
           <span className="font-semibold">{actor}</span>
           <span className="text-muted"> · {timeAgoIB(at)}</span>
         </div>
-        <div className="text-sm text-text-secondary mt-0.75 leading-1.5 preserve-whitespace">{text}</div>
+        <div className="text-sm text-text-secondary mt-0.75 leading-[1.5] preserve-whitespace">{text}</div>
       </div>
     </div>
   );
