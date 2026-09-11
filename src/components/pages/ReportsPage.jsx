@@ -9,13 +9,15 @@ import * as XLSX from 'xlsx'
 const safeWindow = () => ({
   UI: typeof window !== 'undefined' && window.PulseUI || { Icon: () => null, Avatar: () => null, Pill: () => null, Button: () => null, IconButton: () => null, Card: () => null, CardHeader: () => null, Skeleton: () => null, EmptyState: () => null, TOKENS: {} },
   Form: typeof window !== 'undefined' && window.PulseForm || { Select: () => null, Segmented: () => null, Input: () => null },
-  Layout: typeof window !== 'undefined' && window.PulseLayout || { PageHeader: () => null, Tabs: () => null, Link: () => null, navigate: () => {} }
+  Layout: typeof window !== 'undefined' && window.PulseLayout || { PageHeader: () => null, Tabs: () => null, Link: () => null, navigate: () => {} },
+  Overlay: typeof window !== 'undefined' && window.PulseOverlay || { Modal: () => null }
 });
 
 const w = safeWindow();
 const IR = w.UI.Icon; const AvR = w.UI.Avatar; const PR = w.UI.Pill; const BR = w.UI.Button; const CR = w.UI.Card; const CHR = w.UI.CardHeader; const SR = w.UI.Skeleton; const ER = w.UI.EmptyState; const TR = w.UI.TOKENS;
 const SeR = w.Form.Select; const MuR = w.Form.MultiSelect; const SgR = w.Form.Segmented; const InR = w.Form.Input;
 const PHR = w.Layout.PageHeader; const LinkR = w.Layout.Link;
+const ModalR = w.Overlay.Modal;
 
 // =====================================================================
 // REPORTS — index, custom, logbook
@@ -98,6 +100,11 @@ function ReportsCustom() {
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [issueTypes, setIssueTypes] = useState([]);
+  const [segmentModal, setSegmentModal] = useState(null); // { title, issues: [] } | null
+
+  const openSegmentIssues = (title, matcher) => {
+    setSegmentModal({ title, issues: allIssues.filter(matcher) });
+  };
 
   // Load filter options
   useEffect(() => {
@@ -809,6 +816,14 @@ function ReportsCustom() {
                       data={chartData.typeData}
                       colors={['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1', '#EF4444', '#14B8A6']}
                       size="medium"
+                      onSegmentClick={(segment) => {
+                        if (segment.name === 'Others') return;
+                        openSegmentIssues(`Issues — ${segment.name}`, issue => (
+                          segment.name === 'Uncategorized'
+                            ? !issue.issueTypes || issue.issueTypes.length === 0
+                            : issue.issueTypes?.some(t => t.name === segment.name)
+                        ));
+                      }}
                     />
                   ) : (
                     <div className="text-center text-muted text-[13px]">No data available</div>
@@ -825,6 +840,13 @@ function ReportsCustom() {
                       data={chartData.departmentData}
                       color="#3B82F6"
                       size="medium"
+                      onBarClick={(item) => {
+                        openSegmentIssues(`Issues — ${item.name}`, issue => (
+                          item.name === 'Unassigned'
+                            ? !issue.departments || issue.departments.length === 0
+                            : issue.departments?.some(d => d.name === item.name)
+                        ));
+                      }}
                     />
                   ) : (
                     <div className="text-center text-muted text-[13px]">No data available</div>
@@ -837,7 +859,14 @@ function ReportsCustom() {
                 <CHR title="Issues by Priority" subtitle="Priority distribution overview"/>
                 <div className="px-5.5 pt-4 pb-5.5">
                   {chartData.priorityData.length > 0 ? (
-                    <PriorityDistributionChart data={chartData.priorityData} />
+                    <PriorityDistributionChart
+                      data={chartData.priorityData}
+                      onTileClick={(item) => {
+                        openSegmentIssues(`Issues — ${item.name} priority`, issue => (
+                          item.name === 'unknown' ? !issue.priority : issue.priority === item.name
+                        ));
+                      }}
+                    />
                   ) : (
                     <div className="text-center text-muted text-[13px]">No data available</div>
                   )}
@@ -938,6 +967,33 @@ function ReportsCustom() {
             </div>
           </CR>
         </>
+      )}
+
+      {segmentModal && (
+        <ModalR title={`${segmentModal.title} (${segmentModal.issues.length})`} onClose={() => setSegmentModal(null)} width={900}>
+          {segmentModal.issues.length === 0 ? (
+            <ER icon="search" title="No issues found" description="No issues match this segment."/>
+          ) : (
+            <div className="max-h-[60vh] overflow-y-auto flex flex-col gap-1">
+              {segmentModal.issues.map(issue => (
+                <div key={issue.id} className="flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg hover:bg-black/4 cursor-pointer"
+                     onClick={() => { setSegmentModal(null); w.Layout.navigate(`/issues/${issue.id}`); }}>
+                  <div className="min-w-0">
+                    <div className="font-medium text-text truncate">#{issue.id} · {issue.title}</div>
+                    <div className="text-[12px] text-muted-light truncate">{issue.name || "—"} · {issue.room_number || issue.location || "—"}</div>
+                    {issue.description && (
+                      <div className="text-[12px] text-muted mt-0.5 whitespace-pre-line">{issue.description}</div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[11.5px] font-semibold px-2 py-0.5 rounded-md capitalize ${issue.priority === 'urgent' ? 'bg-urgent/20 text-urgent' : issue.priority === 'high' ? 'bg-high/20 text-high' : issue.priority === 'medium' ? 'bg-medium/20 text-medium' : 'bg-low/20 text-low'}`}>{issue.priority}</span>
+                    <span className={`text-[11.5px] font-semibold px-2 py-0.5 rounded-md capitalize ${issue.status === 'open' ? 'bg-accent/15 text-accent' : 'bg-success/15 text-success'}`}>{issue.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ModalR>
       )}
     </div>
   );
@@ -1411,7 +1467,7 @@ function DepartmentBars({ data }) {
 // Interactive Chart Components for Custom Reports
 // =====================================================================
 
-function InteractiveDonutChart({ data, colors, size = "medium" }) {
+function InteractiveDonutChart({ data, colors, size = "medium", onSegmentClick }) {
   const total = data.reduce((sum, item) => sum + item.count, 0);
   const dimensions = size === "large" ? { cx: 120, cy: 120, r: 80, sw: 28 } :
                       size === "medium" ? { cx: 100, cy: 100, r: 65, sw: 22 } :
@@ -1456,6 +1512,7 @@ function InteractiveDonutChart({ data, colors, size = "medium" }) {
                   stroke={segment.color} strokeWidth={dimensions.sw} fill="none"
                   strokeLinecap="butt"
                   style={{ transition: "all 0.3s ease", cursor: "pointer" }}
+                  onClick={() => onSegmentClick?.(segment)}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.opacity = "0.8";
                     e.currentTarget.style.strokeWidth = `${dimensions.sw + 4}px`;
@@ -1477,6 +1534,7 @@ function InteractiveDonutChart({ data, colors, size = "medium" }) {
         {segments.map((segment, i) => (
           <div key={i}
                style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", padding: "4px 6px", borderRadius: 6, transition: "background 0.2s" }}
+               onClick={() => onSegmentClick?.(segment)}
                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
             <span style={{
@@ -1495,7 +1553,7 @@ function InteractiveDonutChart({ data, colors, size = "medium" }) {
   );
 }
 
-function InteractiveBarChart({ data, color }) {
+function InteractiveBarChart({ data, color, onBarClick }) {
   const max = Math.max(1, ...data.map(d => d.count));
 
   return (
@@ -1503,6 +1561,7 @@ function InteractiveBarChart({ data, color }) {
       {data.map((item, index) => (
         <div key={index}
              style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 6, transition: "background 0.2s" }}
+             onClick={() => onBarClick?.(item)}
              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
@@ -1526,7 +1585,7 @@ function InteractiveBarChart({ data, color }) {
   );
 }
 
-function PriorityDistributionChart({ data }) {
+function PriorityDistributionChart({ data, onTileClick }) {
   const max = Math.max(1, ...data.map(d => d.count));
   const colors = {
     urgent: "#DC2626",
@@ -1556,6 +1615,7 @@ function PriorityDistributionChart({ data }) {
                transition: "all 0.2s",
                border: "2px solid transparent"
              }}
+             onClick={() => onTileClick?.(item)}
              onMouseEnter={(e) => {
                e.currentTarget.style.background = "rgba(0,0,0,0.04)";
                e.currentTarget.style.borderColor = colors[item.name] || colors.unknown;
