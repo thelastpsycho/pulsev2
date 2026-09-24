@@ -31,7 +31,7 @@ function ReportsPage({ tab = "index" }) {
   return (
     <div>
       <PHR title="Reports" subtitle="Export and review issue activity"
-        actions={<BR variant="outline" icon="download">Export</BR>}
+        actions={tab !== "custom" && <BR variant="outline" icon="download">Export</BR>}
         tabs={
           <div className="flex gap-1 border-b border-black/6">
             {tabs.map(t => (
@@ -658,13 +658,13 @@ function ReportsCustom() {
   return (
     <div>
       {/* Filters */}
-      <CR className="mb-4">
-        <CHR title="Custom Filters" subtitle="Filter issues by multiple criteria"/>
-        <div className="px-5.5 pt-[18px] pb-5.5">
-          <div className="grid grid-cols-3 gap-3">
+      <CR className="mb-4 !overflow-visible">
+        <CHR title="Custom Filters" subtitle="Filter issues by multiple criteria" className="!pt-2.5 !pb-2.5 !px-4"/>
+        <div className="px-4 pt-3 pb-4">
+          <div className="grid grid-cols-5 gap-2">
             {/* Date Range Dropdown */}
             <div>
-              <label className="block text-[12px] font-semibold text-muted-light mb-1">Date Range</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Date Range</label>
               <SeR
                 value={filters.date_range}
                 onChange={v => handleDateRangeChange(v)}
@@ -690,7 +690,7 @@ function ReportsCustom() {
 
             {/* Status - Multi-select */}
             <div>
-              <label className="block text-[12px] font-semibold text-muted-light mb-1">Status</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Status</label>
               <MuR value={filters.status} onChange={v => updateFilter('status', v)} placeholder="All statuses" options={[
                 { value: "open", label: "Open" },
                 { value: "closed", label: "Closed" },
@@ -700,7 +700,7 @@ function ReportsCustom() {
 
             {/* Priority - Multi-select */}
             <div>
-              <label className="block text-[12px] font-semibold text-muted-light mb-1">Priority</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Priority</label>
               <MuR value={filters.priority} onChange={v => updateFilter('priority', v)} placeholder="All priorities" options={[
                 { value: "urgent", label: "Urgent" },
                 { value: "high", label: "High" },
@@ -711,41 +711,41 @@ function ReportsCustom() {
 
             {/* Department - Multi-select */}
             <div>
-              <label className="block text-[12px] font-semibold text-muted-light mb-1">Department</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Department</label>
               <MuR value={filters.department_id} onChange={v => updateFilter('department_id', v)} placeholder="All departments" options={departments.filter(d => d.is_active).map(d => ({ value: String(d.id), label: d.name }))}/>
             </div>
 
             {/* Issue Type - Multi-select */}
             <div>
-              <label className="block text-[12px] font-semibold text-muted-light mb-1">Issue Type</label>
+              <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Issue Type</label>
               <MuR value={filters.issue_type_id} onChange={v => updateFilter('issue_type_id', v)} placeholder="All types" options={issueTypes.filter(t => t.is_active).map(t => ({ value: String(t.id), label: t.name }))}/>
             </div>
+          </div>
 
-            {/* Export buttons placeholder */}
-            <div className="flex items-end gap-2">
-              <BR variant="outline" icon="download" size="sm" onClick={exportToPDF} disabled={!hasFilters || loading}>Export PDF</BR>
-              <BR variant="outline" icon="file" size="sm" onClick={exportToExcel} disabled={!hasFilters || loading}>Export Excel</BR>
-            </div>
+          {/* Export buttons */}
+          <div className="flex justify-end gap-2 mt-2">
+            <BR variant="outline" icon="download" size="sm" onClick={exportToPDF} disabled={!hasFilters || loading}>Export PDF</BR>
+            <BR variant="outline" icon="file" size="sm" onClick={exportToExcel} disabled={!hasFilters || loading}>Export Excel</BR>
           </div>
 
           {/* Custom Date Fields - Only show when "Custom range" is selected */}
           {filters.date_range === 'custom' && (
-            <div className="mt-4 px-4 py-3.5 bg-accent/4 rounded-2xl border border-accent/15">
-              <div className="text-[13px] font-semibold text-accent mb-3 flex items-center gap-1.5">
-                <IR name="calendar" size={14} color={TR.accent}/>
+            <div className="mt-2 px-3 py-2.5 bg-accent/4 rounded-xl border border-accent/15">
+              <div className="text-[12.5px] font-semibold text-accent mb-2 flex items-center gap-1.5">
+                <IR name="calendar" size={13} color={TR.accent}/>
                 Custom Date Range
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[12px] font-semibold text-muted-light mb-1">Date From</label>
+                  <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Date From</label>
                   <InR value={filters.date_from} onChange={v => updateFilter('date_from', v)} type="date" placeholder="" className="w-full"/>
                 </div>
                 <div>
-                  <label className="block text-[12px] font-semibold text-muted-light mb-1">Date To</label>
+                  <label className="block text-[12px] font-semibold text-muted-light mb-0.5">Date To</label>
                   <InR value={filters.date_to} onChange={v => updateFilter('date_to', v)} type="date" placeholder="" className="w-full"/>
                 </div>
               </div>
-              <div className="text-[12px] text-muted mt-2">
+              <div className="text-[12px] text-muted mt-1.5">
                 {filters.date_from && filters.date_to ? (
                   <span className="text-accent font-medium">📅 {filters.date_from} → {filters.date_to}</span>
                 ) : (
@@ -756,8 +756,8 @@ function ReportsCustom() {
           )}
 
           {/* Show current filter summary */}
-          {hasFilters && (
-            <div className="mt-4 px-3.5 py-3.5 bg-black/3 rounded-lg text-[13px] flex items-center justify-between">
+          {hasFilters ? (
+            <div className="mt-2 px-3 py-2 bg-black/3 rounded-lg text-[12.5px] flex items-center justify-between">
               <span className="text-muted">
                 <span className="font-semibold text-text">Active filters:</span>{' '}
                 {filters.date_range !== 'all' && (
@@ -778,14 +778,9 @@ function ReportsCustom() {
               </span>
               <BR variant="ghost" size="sm" icon="x" onClick={clearFilters}>Clear all</BR>
             </div>
+          ) : (
+            <div className="text-[12.5px] text-muted italic mt-2">Select filters to generate report</div>
           )}
-
-          <div className="flex gap-2 mt-4">
-            {!hasFilters && (
-              <span className="text-[13px] text-muted italic">Select filters to generate report</span>
-            )}
-            <div className="flex-1"/>
-          </div>
         </div>
       </CR>
 
