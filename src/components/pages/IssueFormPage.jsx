@@ -119,6 +119,12 @@ function IssueFormPage({ id }) {
         window.toast.success("Issue created");
         navI(`/issues/${r.data.id}`);
       }
+    } catch (err) {
+      console.error('Failed to save issue:', err);
+      if (err?.errors) {
+        setErrors(Object.fromEntries(Object.entries(err.errors).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])));
+      }
+      window.toast.error(err?.message || "Failed to save issue");
     } finally { setSaving(false); }
   };
 
