@@ -287,7 +287,8 @@ export const DepartmentsAPI = {
 export interface IssueTypeData {
   name: string;
   description?: string;
-  category_id?: number;
+  issue_category_id?: number | null;
+  default_severity?: IssueType['default_severity'];
   is_active?: boolean;
 }
 

@@ -476,7 +476,7 @@ function AdminIssueTypesPage() {
   const grouped = useMemo(() => {
     if (!types) return {};
     const g = {};
-    types.forEach(t => { const k = t.issue_category?.name || "Uncategorized"; (g[k] = g[k] || []).push(t); });
+    types.forEach(t => { const k = t.category?.name || t.issue_category?.name || "Uncategorized"; (g[k] = g[k] || []).push(t); });
     return g;
   }, [types]);
   return (
@@ -499,7 +499,7 @@ function AdminIssueTypesPage() {
                     {t.description && <div style={{ fontSize: 12, color: TA.muted, marginTop: 1 }}>{t.description}</div>}
                   </div>
                   <PA color={TA.muted} style={{ fontVariantNumeric: "tabular-nums" }}>{t.issues_count} issues</PA>
-                  {t.default_severity && <window.PulseUI.PriorityPill value={t.default_severity}/>}
+                  {t.default_severity && <PA color={TA[t.default_severity === "critical" ? "urgent" : t.default_severity]}>{t.default_severity}</PA>}
                   <DdA trigger={<button style={{ background: "none", border: "none", padding: 4, cursor: "pointer" }}><IA name="more" size={15} color={TA.mutedLight}/></button>}>
                     <DiA icon="edit" label="Edit" onClick={() => setEditing(t)}/>
                     <DdvA/>
@@ -518,18 +518,75 @@ function AdminIssueTypesPage() {
 
 function TypeDrawer({ type, onClose, onSave }) {
   const isNew = !type;
-  const [form, setForm] = useState(type ? { ...type, issue_category_id: type.issue_category?.id } : { name: "", description: "", issue_category_id: 1, default_severity: "medium", is_active: true });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [form, setForm] = useState({
+    name: type?.name || "",
+    description: type?.description || "",
+    issue_category_id: type?.issue_category_id ?? type?.category?.id ?? type?.issue_category?.id ?? "",
+    default_severity: type?.default_severity ?? "medium",
+    is_active: type?.is_active ?? true,
+  });
+  const [categories, setCategories] = useState([]);
+  const [categoryError, setCategoryError] = useState("");
+  const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const set = (k, v) => {
+    setForm(f => ({ ...f, [k]: v }));
+    setErrors(e => ({ ...e, [k]: undefined }));
+    setSaveError("");
+  };
+
+  useEffect(() => {
+    let active = true;
+    window.PulseAPI.Categories.list().then(r => {
+      if (active) setCategories(r.data);
+    }).catch(() => {
+      if (active) setCategoryError("Could not load categories. Close and reopen this form to retry.");
+    });
+    return () => { active = false; };
+  }, []);
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    const validationErrors = {};
+    if (!form.name.trim()) validationErrors.name = "Name is required";
+    else if (form.name.trim().length > 255) validationErrors.name = "Name must be at most 255 characters";
+    if (form.default_severity && !["critical", "high", "medium", "low"].includes(form.default_severity)) {
+      validationErrors.default_severity = "Select a valid severity";
+    }
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length) return;
+
+    setIsSubmitting(true);
+    setSaveError("");
+    try {
+      await onSave({
+        ...form,
+        name: form.name.trim(),
+        issue_category_id: form.issue_category_id === "" ? null : Number(form.issue_category_id),
+        default_severity: form.default_severity || null,
+      });
+    } catch (error) {
+      const fieldErrors = Object.fromEntries(Object.entries(error.errors || {}).map(([key, messages]) => [
+        key, Array.isArray(messages) ? messages.join(" ") : String(messages),
+      ]));
+      setErrors(fieldErrors);
+      setSaveError(error.message || "Failed to save issue type. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <DrA open={true} onClose={onClose} title={isNew ? "New issue type" : `Edit ${type.name}`} width={400} footer={
-      <><BA variant="ghost" onClick={onClose}>Cancel</BA><BA icon="check" onClick={() => onSave(form)}>{isNew ? "Create" : "Save"}</BA></>
+    <DrA open={true} onClose={isSubmitting ? () => {} : onClose} title={isNew ? "New issue type" : `Edit ${type.name}`} width={400} footer={
+      <><BA variant="ghost" onClick={onClose} disabled={isSubmitting}>Cancel</BA><BA icon="check" onClick={handleSubmit} disabled={isSubmitting || !form.name.trim()} loading={isSubmitting}>{isNew ? "Create" : "Save"}</BA></>
     }>
-      <FA label="Name" required><InA value={form.name} onChange={v => set("name", v)} autoFocus/></FA>
-      <FA label="Category"><SeA value={form.issue_category_id} onChange={v => set("issue_category_id", Number(v))} options={form.categories || []} placeholder=""/></FA>
-      <FA label="Default severity"><SeA value={form.default_severity} onChange={v => set("default_severity", v)} options={["urgent","high","medium","low"]} placeholder=""/></FA>
-      <FA label="Description"><TaA value={form.description} onChange={v => set("description", v)} rows={2}/></FA>
-      <FA label="Status"><TgA checked={form.is_active} onChange={v => set("is_active", v)} label={form.is_active ? "Active" : "Inactive"}/></FA>
+      {saveError && <div role="alert" className="text-danger text-[13px] mb-3">{saveError}</div>}
+      <FA label="Name" required error={errors.name}><InA value={form.name} onChange={v => set("name", v)} autoFocus error={!!errors.name} disabled={isSubmitting}/></FA>
+      <FA label="Category" error={errors.issue_category_id || categoryError}><SeA value={form.issue_category_id} onChange={v => set("issue_category_id", v)} options={categories.map(c => ({ value: c.id, label: c.name }))} placeholder="No category" error={!!errors.issue_category_id || !!categoryError} disabled={isSubmitting || !!categoryError}/></FA>
+      <FA label="Default severity" error={errors.default_severity}><SeA value={form.default_severity} onChange={v => set("default_severity", v)} options={["critical","high","medium","low"]} placeholder="No default severity" error={!!errors.default_severity} disabled={isSubmitting}/></FA>
+      <FA label="Description" error={errors.description}><TaA value={form.description} onChange={v => set("description", v)} rows={2} error={!!errors.description} disabled={isSubmitting}/></FA>
+      <FA label="Status" error={errors.is_active}><TgA checked={form.is_active} onChange={v => set("is_active", v)} label={form.is_active ? "Active" : "Inactive"} disabled={isSubmitting}/></FA>
     </DrA>
   );
 }

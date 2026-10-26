@@ -38,12 +38,17 @@ export interface Department {
   is_active: boolean;
 }
 
+export type IssueTypeSeverity = 'critical' | 'high' | 'medium' | 'low';
+
 export interface IssueType {
   id: number;
   name: string;
   description?: string;
   is_active: boolean;
-  category_id?: number;
+  issue_category_id?: number | null;
+  default_severity?: IssueTypeSeverity | null;
+  category?: IssueCategory | null;
+  issues_count?: number;
 }
 
 export interface IssueCategory {
@@ -267,7 +272,8 @@ export interface DepartmentFormData {
 export interface IssueTypeFormData {
   name: string;
   description?: string;
-  category_id?: number;
+  issue_category_id?: number | null;
+  default_severity?: IssueTypeSeverity | null;
   is_active?: boolean;
 }
 
