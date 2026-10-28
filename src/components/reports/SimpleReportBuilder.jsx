@@ -31,6 +31,7 @@ function SimpleReportBuilder() {
     { id: 'created_at', label: 'Created Date', type: 'date' },
     { id: 'name', label: 'Guest Name', type: 'text' },
     { id: 'room_number', label: 'Room Number', type: 'text' },
+    { id: 'source', label: 'Source', type: 'text' },
     { id: 'departments', label: 'Department', type: 'select' },
     { id: 'assignedTo', label: 'Assigned To', type: 'select' },
   ];
@@ -170,7 +171,7 @@ function SimpleReportBuilder() {
 
   const fieldGroups = [
     { id: 'issue', label: 'Issue Fields', fields: ['title', 'status', 'priority', 'created_at'] },
-    { id: 'guest', label: 'Guest Information', fields: ['name', 'room_number'] },
+    { id: 'guest', label: 'Guest Information', fields: ['name', 'room_number', 'source'] },
     { id: 'meta', label: 'Metadata', fields: ['departments', 'assignedTo'] },
   ];
 

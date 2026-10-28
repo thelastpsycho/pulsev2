@@ -311,6 +311,12 @@ function MobileIssueDetailPage({ issueId }) {
             )}
             <span>·</span>
             <span>{formatDate(issue.created_at)}</span>
+            {issue.source && (
+              <>
+                <span>·</span>
+                <span>via {issue.source}</span>
+              </>
+            )}
           </div>
         </div>
 

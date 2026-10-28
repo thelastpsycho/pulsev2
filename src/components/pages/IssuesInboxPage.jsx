@@ -263,6 +263,7 @@ function IssueListCard({ issue, selected }) {
           <div className="text-xs text-muted mt-px">
             {issue.room_number || issue.location || "—"}
             {issue.departments?.[0] && ` · ${issue.departments[0].name}`}
+            {issue.source && ` · via ${issue.source}`}
           </div>
           <div className="text-[13px] text-text mt-1.5 leading-[1.35] overflow-hidden [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
             {issue.title}

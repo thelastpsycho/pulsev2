@@ -308,6 +308,7 @@ function MobileIssueCard({ issue }) {
           <div className="text-[12px] text-muted mb-1.5">
             {issue.room_number || issue.location || "—"}
             {issue.departments?.[0] && ` · ${issue.departments[0].name}`}
+            {issue.source && ` · via ${issue.source}`}
           </div>
           <div className="text-[14px] text-text leading-snug mb-2 line-clamp-2">
             {issue.title}

@@ -281,6 +281,7 @@ function ReportsCustom() {
         `Issue Date: ${formatDate(issue.issue_date)}`,
         `Dept: ${issue.departments?.map(d => d.name).join(', ') || 'N/A'}`,
         `Priority: ${issue.priority} | Status: ${issue.status}`,
+        `Source: ${issue.source || '—'}`,
       ].join('\n'),
       issue.description || '—',
       issue.recovery || '—',
@@ -394,7 +395,7 @@ function ReportsCustom() {
 
     // Detailed Issues sheet
     const issuesData = [
-      ['ID', 'Name', 'Room Number', 'Check-in Date', 'Check-out Date', 'Stay Period', 'Nationality', 'Title', 'Description', 'Recovery', 'Department', 'Issue Types', 'Priority', 'Status', 'Created Date'],
+      ['ID', 'Name', 'Room Number', 'Check-in Date', 'Check-out Date', 'Stay Period', 'Nationality', 'Source', 'Title', 'Description', 'Recovery', 'Department', 'Issue Types', 'Priority', 'Status', 'Created Date'],
       ...allIssues.map(issue => {
         const checkin = issue.checkin_date ? new Date(issue.checkin_date).toLocaleDateString() : '';
         const checkout = issue.checkout_date ? new Date(issue.checkout_date).toLocaleDateString() : '';
@@ -407,6 +408,7 @@ function ReportsCustom() {
           checkout,
           stayPeriod,
           issue.nationality || '',
+          issue.source || '',
           issue.title || '',
           issue.description || '',
           issue.recovery || '',
@@ -430,6 +432,7 @@ function ReportsCustom() {
       { wch: 12 }, // Check-out Date
       { wch: 20 }, // Stay Period
       { wch: 12 }, // Nationality
+      { wch: 16 }, // Source
       { wch: 30 }, // Title
       { wch: 40 }, // Description
       { wch: 25 }, // Recovery
@@ -1051,6 +1054,7 @@ function ReportsLogbook() {
       issue.title || 'N/A',
       issue.location || 'N/A',
       issue.name || '—',
+      issue.source || '—',
       issue.priority || 'N/A',
       new Date(issue.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       issue.description || 'N/A'
@@ -1058,19 +1062,20 @@ function ReportsLogbook() {
 
     doc.autoTable({
       startY: 52,
-      head: [['ID', 'Title', 'Location', 'Guest/Room', 'Priority', 'Time', 'Description']],
+      head: [['ID', 'Title', 'Location', 'Guest/Room', 'Source', 'Priority', 'Time', 'Description']],
       body: tableData,
       theme: 'grid',
       styles: { fontSize: 9, cellPadding: 2 },
       headStyles: { fillColor: [59, 130, 246] },
       columnStyles: {
-        0: { cellWidth: 12 },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 18 },
-        5: { cellWidth: 18 },
-        6: { cellWidth: 50 }
+        0: { cellWidth: 10 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 16 },
+        6: { cellWidth: 16 },
+        7: { cellWidth: 44 }
       }
     });
 
