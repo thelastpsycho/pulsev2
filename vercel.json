@@ -13,11 +13,19 @@
       "config": {
         "distDir": "dist"
       }
+    },
+    {
+      "src": "api/mcp.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "handle": "filesystem"
+    },
+    {
+      "src": "/api/mcp",
+      "dest": "/api/mcp.js"
     },
     {
       "src": "/assets/(.*)",
